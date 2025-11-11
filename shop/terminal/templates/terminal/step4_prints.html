@@ -1,0 +1,151 @@
+<div id="step4" class="step-container">
+    <div class="step-header">ВЫБЕРИТЕ ПРИНТ</div>
+    <div class="print-step">
+        <div class="product-preview">
+            <div class="print-area" id="printArea">
+                <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: #666; font-size: 1.2em; text-align: center;">
+                    Область для принта<br>
+                    <span style="font-size: 0.8em;">Перетащите принт сюда</span>
+                </div>
+            </div>
+        </div>
+        <div class="print-info">
+            <div class="product-details">
+                <h3>Информация о товаре</h3>
+                <p id="productInfoText">Модель: - Размер: -</p>
+            </div>
+            <div class="prints-grid" id="printsGallery">
+                <div class="print-card custom" onclick="selectPrint('Свой текст')">
+                    <div class="print-icon">✏️</div>
+                    <div class="print-name">Свой текст</div>
+                    <div class="print-price">+500₽</div>
+                </div>
+                <div class="print-card" onclick="selectPrint('Логотип Дракон')">
+                    <div class="print-icon">🐉</div>
+                    <div class="print-name">Логотип Дракон</div>
+                    <div class="print-price">+850₽</div>
+                </div>
+                <div class="print-card" onclick="selectPrint('Графика Волна')">
+                    <div class="print-icon">🌊</div>
+                    <div class="print-name">Графика Волна</div>
+                    <div class="print-price">+700₽</div>
+                </div>
+                <div class="print-card" onclick="selectPrint('Текст Python')">
+                    <div class="print-icon">🐍</div>
+                    <div class="print-name">Текст Python</div>
+                    <div class="print-price">+600₽</div>
+                </div>
+                <div class="print-card" onclick="selectPrint('Абстракция')">
+                    <div class="print-icon">🎨</div>
+                    <div class="print-name">Абстракция</div>
+                    <div class="print-price">+900₽</div>
+                </div>
+                <div class="print-card" onclick="selectPrint('Геометрия')">
+                    <div class="print-icon">🔷</div>
+                    <div class="print-name">Геометрия</div>
+                    <div class="print-price">+800₽</div>
+                </div>
+                <div class="print-card" onclick="selectPrint('Череп')">
+                    <div class="print-icon">💀</div>
+                    <div class="print-name">Череп</div>
+                    <div class="print-price">+750₽</div>
+                </div>
+                <div class="print-card" onclick="selectPrint('Сердце')">
+                    <div class="print-icon">❤️</div>
+                    <div class="print-name">Сердце</div>
+                    <div class="print-price">+650₽</div>
+                </div>
+            </div>
+            <div class="custom-controls" id="customControls" style="display: none;">
+                <input type="text" id="customText" placeholder="Введите ваш текст" maxlength="50">
+                <select id="fontSelect">
+                    <option value="Arial">Arial</option>
+                    <option value="Times New Roman">Times New Roman</option>
+                    <option value="Verdana">Verdana</option>
+                    <option value="Courier New">Courier New</option>
+                </select>
+                <button onclick="applyCustomText()">Применить текст</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.prints-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 15px;
+    padding: 20px;
+    overflow-y: auto;
+    max-height: 400px;
+}
+.print-card {
+    background: #555;
+    border-radius: 15px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    padding: 15px 10px;
+    text-align: center;
+    transition: all 0.3s ease;
+    border: 2px solid transparent;
+    cursor: pointer;
+    min-height: 120px;
+}
+.print-card.selected {
+    border-color: #4CAF50;
+    background: #666;
+    transform: scale(1.05);
+}
+.print-card.custom {
+    background: #ff9800;
+    color: #000;
+}
+.print-card:hover {
+    background: #666;
+}
+.print-card.custom:hover {
+    background: #e68900;
+}
+.print-icon {
+    font-size: 2em;
+    margin-bottom: 8px;
+}
+.print-name {
+    font-size: 0.8em;
+    font-weight: bold;
+    margin-bottom: 5px;
+}
+.print-price {
+    font-size: 0.7em;
+    opacity: 0.8;
+}
+.custom-controls {
+    margin-top: 20px;
+    padding: 20px;
+    background: #333;
+    border-radius: 10px;
+}
+.custom-controls input,
+.custom-controls select {
+    width: 100%;
+    padding: 12px;
+    margin: 8px 0;
+    background: #444;
+    color: white;
+    border: 1px solid #555;
+    border-radius: 5px;
+    font-size: 1.1em;
+}
+.custom-controls button {
+    padding: 10px;
+    margin-top: 10px;
+    width: 100%;
+    background: #4CAF50;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+}
+</style>

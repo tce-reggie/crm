@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Терминал оформления заказов</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; touch-action: manipulation; user-select: none; }
+        body { font-family: Arial; background: #000; color: white; height: 100vh; overflow: hidden; }
+
+        #screensaver {
+            width: 100vw; height: 100vh;
+            background: linear-gradient(135deg, #1a1a1a, #2d2d2d);
+            display: flex; justify-content: center; align-items: center;
+            font-size: 4em; cursor: pointer; flex-direction: column;
+            position: fixed; top: 0; left: 0; z-index: 1000;
+        }
+
+        #app { display: none; height: 100vh; flex-direction: column; }
+        .step-container { flex: 1; display: none; flex-direction: column; }
+        .step-header { text-align: center; font-size: 2.5em; padding: 30px; background: #333; border-bottom: 3px solid #555; }
+
+        /* Навигация */
+        .navigation {
+            display: flex;
+            justify-content: space-between;
+            padding: 25px 30px;
+            background: #333;
+            border-top: 3px solid #555;
+        }
+
+        .nav-btn {
+            padding: 20px 40px;
+            font-size: 1.5em;
+            background: #555;
+            color: white;
+            border: none;
+            border-radius: 15px;
+            cursor: pointer;
+            min-width: 150px;
+        }
+
+        .nav-btn:disabled {
+            background: #333;
+            color: #666;
+            cursor: not-allowed;
+        }
+
+        .nav-btn.confirm {
+            background: #4CAF50;
+        }
+
+        /* Экран успеха */
+        #successScreen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.9);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 2000;
+            flex-direction: column;
+            text-align: center;
+        }
+
+        .order-number {
+            font-size: 5em;
+            color: #4CAF50;
+            margin: 30px 0;
+            font-weight: bold;
+        }
+
+        .success-message {
+            font-size: 2em;
+            margin-bottom: 50px;
+        }
+    </style>
+</head>
+<body>
+    <div id="screensaver" onclick="startApplication()">
+        НАЖМИТЕ ДЛЯ РАБОТЫ
+        <div style="font-size: 0.5em; margin-top: 20px;">Коснитесь экрана для начала работы</div>
+    </div>
+
+    <div id="app">
+        <!-- ШАГ 1: ВЫБОР ИЗДЕЛИЯ -->
+        {% include 'terminal/step1_products.html' %}
+
+        <!-- ШАГ 2: ВЫБОР МОДЕЛИ -->
+        {% include 'terminal/step2_models.html' %}
+
+        <!-- ШАГ 3: ВЫБОР РАЗМЕРА -->
+        {% include 'terminal/step3_sizes.html' %}
+
+        <!-- ШАГ 4: ВЫБОР ПРИНТА -->
+        {% include 'terminal/step4_prints.html' %}
+
+        <!-- ШАГ 5: ПОДТВЕРЖДЕНИЕ -->
+        {% include 'terminal/step5_confirmation.html' %}
+
+        <!-- НАВИГАЦИЯ -->
+        {% include 'terminal/navigation.html' %}
+    </div>
+
+    <!-- ЭКРАН УСПЕШНОГО ЗАКАЗА -->
+    {% include 'terminal/success_screen.html' %}
+
+    <script>
+        // JavaScript код остается тем же
+        let currentStep = 1;
+        let selectedProduct = null;
+        let selectedModel = null;
+        let selectedSize = null;
+        let selectedPrint = null;
+
+        function startApplication() {
+            console.log('Start application called');
+            document.getElementById('screensaver').style.display = 'none';
+            document.getElementById('app').style.display = 'flex';
+            showStep(1);
+        }
+
+        function showStep(step) {
+            console.log('Show step:', step);
+            document.querySelectorAll('.step-container').forEach(container => {
+                container.style.display = 'none';
+            });
+
+            const stepElement = document.getElementById(`step${step}`);
+            if (stepElement) {
+                stepElement.style.display = 'flex';
+            }
+
+            currentStep = step;
+            updateNavigation();
+        }
+
+        function updateNavigation() {
+            const prevBtn = document.getElementById('prevBtn');
+            const nextBtn = document.getElementById('nextBtn');
+            const confirmBtn = document.getElementById('confirmBtn');
+
+            prevBtn.disabled = currentStep === 1;
+            nextBtn.style.display = currentStep === 5 ? 'none' : 'block';
+            confirmBtn.style.display = currentStep === 5 ? 'block' : 'none';
+        }
+
+        function selectProduct(productId, productName) {
+            selectedProduct = { id: productId, name: productName };
+            updateSelection('productsContainer', productName);
+            nextStep();
+        }
+
+        function selectModel(modelId, modelName) {
+            selectedModel = { id: modelId, name: modelName };
+            updateSelection('modelsContainer', modelName);
+            nextStep();
+        }
+
+        function selectSize(size) {
+            selectedSize = size;
+            updateSelection('sizesContainer', size);
+            nextStep();
+        }
+
+        function selectPrint(printType) {
+            selectedPrint = printType;
+            updateSelection('printsGallery', printType);
+            updateProductInfo();
+        }
+
+        function updateSelection(containerId, selectedValue) {
+            const container = document.getElementById(containerId);
+            container.querySelectorAll('.swipe-item, .print-option').forEach(item => {
+                item.classList.remove('selected');
+            });
+
+            const elements = container.querySelectorAll('.swipe-item, .print-option');
+            elements.forEach(element => {
+                if (element.textContent.includes(selectedValue)) {
+                    element.classList.add('selected');
+                }
+            });
+        }
+
+        function updateProductInfo() {
+            const infoText = `Модель: ${selectedModel?.name || '-'} | Размер: ${selectedSize || '-'}`;
+            document.getElementById('productInfoText').textContent = infoText;
+        }
+
+        function nextStep() {
+            if (currentStep < 5) {
+                showStep(currentStep + 1);
+                if (currentStep === 4) {
+                    updateProductInfo();
+                }
+                if (currentStep === 5) {
+                    updateOrderSummary();
+                }
+            }
+        }
+
+        function previousStep() {
+            if (currentStep > 1) {
+                showStep(currentStep - 1);
+            }
+        }
+
+        function updateOrderSummary() {
+            document.getElementById('summaryProduct').textContent = selectedProduct?.name || '-';
+            document.getElementById('summaryModel').textContent = selectedModel?.name || '-';
+            document.getElementById('summarySize').textContent = selectedSize || '-';
+            document.getElementById('summaryPrint').textContent = selectedPrint || '-';
+        }
+
+        function submitOrder() {
+            const name = document.getElementById('customerName').value;
+            const phone = document.getElementById('customerPhone').value;
+
+            if (!name || !phone) {
+                alert('Пожалуйста, заполните все поля');
+                return;
+            }
+
+            const orderNumber = 'ORD' + Math.random().toString().substr(2, 6);
+            document.getElementById('orderNumberDisplay').textContent = orderNumber;
+            document.getElementById('successScreen').style.display = 'flex';
+        }
+
+        function resetTerminal() {
+            document.getElementById('successScreen').style.display = 'none';
+            document.getElementById('customerName').value = '';
+            document.getElementById('customerPhone').value = '';
+            selectedProduct = null;
+            selectedModel = null;
+            selectedSize = null;
+            selectedPrint = null;
+            document.querySelectorAll('.selected').forEach(item => {
+                item.classList.remove('selected');
+            });
+            showStep(1);
+        }
+    </script>
+</body>
+</html>

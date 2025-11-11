@@ -7,31 +7,48 @@ from .models import Product, PrintDesign, Order, OrderPrint, User, PromoCode, Pr
 
 def terminal_view(request):
     """Главная страница терминала"""
-    return render(request, 'terminal.html')
-
-
-@csrf_exempt
-def api_products(request):  # Добавлен параметр request
-    """API для получения списка продуктов (изделий)"""
     try:
-        # Получаем уникальные типы изделий, которые есть в наличии
-        products = Product.objects.filter(quantity__gt=0).values('model').distinct()
+        # Получаем уникальные модели изделий
+        products = Product.objects.filter(quantity__gt=0).values_list('model', flat=True).distinct()
 
         products_data = []
-        for product in products:
-            model_name = product['model']
-            # Получаем первое изделие для этого типа
-            first_product = Product.objects.filter(model=model_name, quantity__gt=0).first()
-
-            # Используем переменную first_product вместо того чтобы оставлять неиспользованной
-            description = f"Доступные модели {model_name}"
-            if first_product:
-                description = f"{first_product.description or description}"
+        for model_name in products:
+            available_count = Product.objects.filter(model=model_name, quantity__gt=0).count()
 
             products_data.append({
                 'id': model_name,
                 'name': model_name,
-                'description': description,  # Теперь используется информация из first_product
+                'description': f"Доступно {available_count} моделей",
+                'image': '#',
+            })
+
+        return render(request, 'terminal/terminal.html', {
+            'products': products_data
+        })
+
+    except Exception as e:
+        return render(request, 'terminal/terminal.html', {
+            'products': []
+        })
+
+
+@csrf_exempt
+def api_products(request):
+    """API для получения списка продуктов (изделий)"""
+    try:
+        # Получаем уникальные модели изделий, которые есть в наличии
+        products = Product.objects.filter(quantity__gt=0).values_list('model', flat=True).distinct()
+
+        products_data = []
+        for model_name in products:
+            # Получаем первое изделие для этого типа для примера
+            first_product = Product.objects.filter(model=model_name, quantity__gt=0).first()
+
+            products_data.append({
+                'id': model_name,
+                'name': model_name,
+                'description': f"Доступные модели {model_name}",
+                'image': '#',  # В реальности нужно добавить поле image в модель
                 'available_count': Product.objects.filter(model=model_name, quantity__gt=0).count()
             })
 
@@ -46,23 +63,26 @@ def api_models(request):
     try:
         product_model = request.GET.get('product_id')
 
-        # Получаем все доступные модели этого типа изделия
-        models = Product.objects.filter(
+        if not product_model:
+            return JsonResponse({'error': 'ID продукта не указан'}, status=400)
+
+        # Получаем все доступные цвета для этой модели
+        colors = Product.objects.filter(
             model=product_model,
             quantity__gt=0
-        ).values('color').distinct()
+        ).values_list('color', flat=True).distinct()
 
         models_data = []
-        for model in models:
-            color = model['color']
-            # Получаем информацию о первой доступной модели этого цвета
-            first_model = Product.objects.filter(model=product_model, color=color, quantity__gt=0).first()
+        for color in colors:
+            # Получаем информацию о первом доступном продукте этого цвета
+            first_product = Product.objects.filter(model=product_model, color=color, quantity__gt=0).first()
 
             models_data.append({
                 'id': color,
                 'name': f"{product_model} - {color}",
-                'description': f"{color} цвет",
-                'base_price': float(first_model.price) if first_model else 0
+                'color': color,
+                'base_price': float(first_product.price) if first_product else 0,
+                'image': '#'  # В реальности нужно добавить поле image
             })
 
         return JsonResponse(models_data, safe=False)
@@ -77,6 +97,9 @@ def api_sizes(request):
         product_model = request.GET.get('product_model')
         color = request.GET.get('model_id')
 
+        if not product_model or not color:
+            return JsonResponse({'error': 'Не указаны модель или цвет'}, status=400)
+
         # Получаем все доступные размеры для этой модели и цвета
         sizes = Product.objects.filter(
             model=product_model,
@@ -85,12 +108,12 @@ def api_sizes(request):
         )
 
         sizes_data = []
-        for size_obj in sizes:
+        for product in sizes:
             sizes_data.append({
-                'size': size_obj.size,
-                'quantity': size_obj.quantity,
-                'price': float(size_obj.price),
-                'product_id': size_obj.product_id
+                'size': product.size,
+                'quantity': product.quantity,
+                'price': float(product.price),
+                'product_id': product.product_id
             })
 
         return JsonResponse(sizes_data, safe=False)
@@ -109,7 +132,8 @@ def api_prints(request):
                 'id': print_obj.print_id,
                 'name': print_obj.name,
                 'type': 'custom' if 'Свой текст' in print_obj.name else 'image',
-                'price': float(print_obj.price)
+                'price': float(print_obj.price),
+                'color': '#ff9800'  # Цвет для визуального отличия
             })
 
         # Сортируем: "Свой текст" первые
@@ -121,14 +145,59 @@ def api_prints(request):
 
 
 @csrf_exempt
+def api_print_areas(request):
+    """API для получения зон печати продукта"""
+    try:
+        product_id = request.GET.get('product_id')
+        if not product_id:
+            return JsonResponse({'error': 'ID продукта не указан'}, status=400)
+
+        # Находим продукт по ID
+        try:
+            product = Product.objects.get(product_id=product_id)
+        except Product.DoesNotExist:
+            return JsonResponse({'error': 'Продукт не найден'}, status=404)
+
+        areas = ProductPrintArea.objects.filter(product=product)
+        areas_data = []
+        for area in areas:
+            areas_data.append({
+                'id': area.area_id,
+                'name': area.area_name,
+                'width': float(area.width),
+                'height': float(area.height),
+                'max_prints': area.max_prints
+            })
+
+        return JsonResponse(areas_data, safe=False)
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
+
+
+@csrf_exempt
 def api_create_order(request):
     """API для создания заказа"""
     if request.method == 'POST':
         try:
             data = json.loads(request.body)
 
+            # Валидация обязательных полей
+            required_fields = ['customer_name', 'phone_number', 'product_id']
+            for field in required_fields:
+                if not data.get(field):
+                    return JsonResponse({
+                        'success': False,
+                        'error': f'Поле {field} обязательно'
+                    }, status=400)
+
             # Получаем продукт из БД
-            product = Product.objects.get(product_id=data['product_id'])
+            try:
+                product = Product.objects.get(product_id=data['product_id'])
+            except Product.DoesNotExist:
+                return JsonResponse({
+                    'success': False,
+                    'error': 'Товар не найден'
+                }, status=400)
 
             # Проверяем наличие
             if product.quantity <= 0:
@@ -137,7 +206,7 @@ def api_create_order(request):
                     'error': 'Товара нет в наличии'
                 }, status=400)
 
-            # Создаем заказ
+            # Создаем заказ (order_id создается автоматически как AutoField)
             order = Order.objects.create(
                 customer_name=data['customer_name'],
                 phone_number=data['phone_number'],
@@ -162,38 +231,42 @@ def api_create_order(request):
             # Если есть принт, создаем запись в OrderPrint
             print_id = data.get('print_id')
             if print_id:
-                print_design = PrintDesign.objects.get(print_id=print_id)
-                OrderPrint.objects.create(
-                    order=order,
-                    print_design=print_design,
-                    area_id=1,
-                    position_x=50,
-                    position_y=50
-                )
+                try:
+                    print_design = PrintDesign.objects.get(print_id=print_id)
+                    # Получаем первую зону печати для продукта
+                    area = ProductPrintArea.objects.filter(product=product).first()
+
+                    if area:
+                        OrderPrint.objects.create(
+                            order=order,
+                            print_design=print_design,
+                            area=area,
+                            position_x=data.get('position_x', 50),
+                            position_y=data.get('position_y', 50)
+                        )
+                except PrintDesign.DoesNotExist:
+                    pass  # Принт не найден, но заказ все равно создается
+
+            # Генерируем красивый номер заказа для отображения
+            order_number = f"ORD{order.order_id:06d}"
 
             return JsonResponse({
                 'success': True,
                 'order_id': order.order_id,
-                'order_number': f"ORD{order.order_id:06d}",
+                'order_number': order_number,
                 'message': 'Заказ успешно создан'
             })
 
-        except Product.DoesNotExist:
-            return JsonResponse({
-                'success': False,
-                'error': 'Товар не найден'
-            }, status=400)
         except Exception as e:
             return JsonResponse({
                 'success': False,
-                'error': str(e)
-            }, status=400)
-    else:
-        # Добавлен возврат для GET запросов
-        return JsonResponse({
-            'success': False,
-            'error': 'Метод не разрешен'
-        }, status=405)
+                'error': f'Ошибка при создании заказа: {str(e)}'
+            }, status=500)
+
+    return JsonResponse({
+        'success': False,
+        'error': 'Метод не разрешен'
+    }, status=405)
 
 
 @csrf_exempt
@@ -249,27 +322,4 @@ def api_check_promocode(request):
             'valid': False,
             'message': f'Ошибка проверки промокода: {str(e)}'
         }, status=500)
-
-
-@csrf_exempt
-def api_print_areas(request):
-    """API для получения зон печати продукта"""
-    try:
-        product_id = request.GET.get('product_id')
-        if not product_id:
-            return JsonResponse({'error': 'ID продукта не указан'}, status=400)
-
-        areas = ProductPrintArea.objects.filter(product_id=product_id)
-        areas_data = []
-        for area in areas:
-            areas_data.append({
-                'id': area.area_id,
-                'name': area.area_name,
-                'width': float(area.width),
-                'height': float(area.height),
-                'max_prints': area.max_prints
-            })
-        return JsonResponse(areas_data, safe=False)
-    except Exception as e:
-        return JsonResponse({'error': str(e)}, status=500)
 

@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Терминал оформления заказов{% endblock %}</title>
+    <style>
+        /* Ваши стили остаются здесь */
+        {% include 'terminal/css/styles.css' %}
+    </style>
+</head>
+<body>
+    {% block content %}
+    {% endblock %}
+
+    {% block scripts %}
+    <script src="{% static 'terminal/js/terminal.js' %}"></script>
+    {% endblock %}
+</body>
+</html>

@@ -1,0 +1,71 @@
+<div id="step1" class="step-container">
+    <div class="step-header">ВЫБЕРИТЕ ИЗДЕЛИЕ</div>
+    <div class="products-grid" id="productsContainer">
+        {% for product in products %}
+        <div class="product-card" onclick="selectProduct('{{ product.id }}', '{{ product.name }}')">
+            <div class="product-image">{{ product.name }}</div>
+            <div class="product-title">{{ product.name }}</div>
+            <div class="product-description">{{ product.description }}</div>
+        </div>
+        {% empty %}
+        <div class="product-card" style="background: #333; grid-column: 1 / -1;">
+            <div>Нет доступных продуктов</div>
+            <div class="product-description">Обратитесь к администратору</div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<style>
+.products-grid {
+    flex: 1;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 20px;
+    padding: 40px 20px;
+    overflow-y: auto;
+}
+.product-card {
+    background: #444;
+    border-radius: 25px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    padding: 30px 20px;
+    font-size: 1.8em;
+    text-align: center;
+    transition: all 0.3s ease;
+    border: 3px solid transparent;
+    min-height: 250px;
+    cursor: pointer;
+}
+.product-card.selected {
+    border-color: #4CAF50;
+    background: #555;
+    transform: scale(1.02);
+}
+.product-card:hover {
+    background: #555;
+}
+.product-image {
+    width: 150px;
+    height: 150px;
+    background: #555;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 15px;
+    margin-bottom: 15px;
+    font-size: 0.6em;
+}
+.product-title {
+    font-weight: bold;
+    margin-bottom: 5px;
+}
+.product-description {
+    font-size: 0.6em;
+    margin-top: 8px;
+    opacity: 0.8;
+}
+</style>

@@ -1,0 +1,89 @@
+<div id="step2" class="step-container">
+    <div class="step-header">ВЫБЕРИТЕ МОДЕЛЬ</div>
+    <div class="models-grid" id="modelsContainer">
+        <div class="model-card" onclick="selectModel('Белая', 'Футболка - Белая')">
+            <div class="model-image" style="background: #ffffff; color: black;">Белая</div>
+            <div class="model-title">Белая модель</div>
+            <div class="model-description">Классический цвет</div>
+        </div>
+        <div class="model-card" onclick="selectModel('Черная', 'Футболка - Черная')">
+            <div class="model-image" style="background: #000000;">Черная</div>
+            <div class="model-title">Черная модель</div>
+            <div class="model-description">Стильный вариант</div>
+        </div>
+        <div class="model-card" onclick="selectModel('Синяя', 'Футболка - Синяя')">
+            <div class="model-image" style="background: #1e3a8a;">Синяя</div>
+            <div class="model-title">Синяя модель</div>
+            <div class="model-description">Яркий выбор</div>
+        </div>
+        <div class="model-card" onclick="selectModel('Красная', 'Футболка - Красная')">
+            <div class="model-image" style="background: #dc2626;">Красная</div>
+            <div class="model-title">Красная модель</div>
+            <div class="model-description">Смелый акцент</div>
+        </div>
+        <div class="model-card" onclick="selectModel('Зеленая', 'Футболка - Зеленая')">
+            <div class="model-image" style="background: #059669;">Зеленая</div>
+            <div class="model-title">Зеленая модель</div>
+            <div class="model-description">Свежий взгляд</div>
+        </div>
+        <div class="model-card" onclick="selectModel('Серая', 'Футболка - Серая')">
+            <div class="model-image" style="background: #6b7280;">Серая</div>
+            <div class="model-title">Серая модель</div>
+            <div class="model-description">Универсальный цвет</div>
+        </div>
+    </div>
+</div>
+
+<style>
+.models-grid {
+    flex: 1;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 20px;
+    padding: 40px 20px;
+    overflow-y: auto;
+}
+.model-card {
+    background: #444;
+    border-radius: 25px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    padding: 25px 15px;
+    font-size: 1.6em;
+    text-align: center;
+    transition: all 0.3s ease;
+    border: 3px solid transparent;
+    min-height: 220px;
+    cursor: pointer;
+}
+.model-card.selected {
+    border-color: #4CAF50;
+    background: #555;
+    transform: scale(1.02);
+}
+.model-card:hover {
+    background: #555;
+}
+.model-image {
+    width: 120px;
+    height: 120px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 15px;
+    margin-bottom: 15px;
+    font-size: 0.7em;
+    font-weight: bold;
+}
+.model-title {
+    font-weight: bold;
+    margin-bottom: 5px;
+}
+.model-description {
+    font-size: 0.6em;
+    margin-top: 8px;
+    opacity: 0.8;
+}
+</style>
