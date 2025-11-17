@@ -3,9 +3,8 @@ from .models import User, PromoCode, Product, ProductPrintArea, PrintDesign, Ord
 
 @admin.register(User)
 class UserAdmin(admin.ModelAdmin):
-    list_display = ['phone_number', 'name', 'access_level']
-    search_fields = ['name', 'phone_number']
-    list_filter = ['access_level']
+    list_display = ['login', 'interface']  # Поля из НОВОЙ модели
+    list_filter = ['interface']  # Фильтр по интерфейсу
 
 @admin.register(PromoCode)
 class PromoCodeAdmin(admin.ModelAdmin):

@@ -1,14 +1,65 @@
-from django.shortcuts import render
+from django.shortcuts import render, redirect
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
+from django.contrib import messages
 import json
 from .models import Product, PrintDesign, Order, OrderPrint, User, PromoCode, ProductPrintArea
 
 
-def terminal_view(request):
-    """Главная страница терминала"""
+def login_view(request):
+    """Общий логин для всех интерфейсов"""
+    if 'user_id' in request.session:
+        return redirect_to_interface(request.session.get('user_interface'))
+
+    if request.method == 'POST':
+        login = request.POST.get('login')
+        password = request.POST.get('password')
+
+        if login and password:
+            try:
+                user = User.objects.get(login=login)
+                if user.check_password(password):
+                    request.session['user_id'] = user.id
+                    request.session['user_login'] = user.login
+                    request.session['user_interface'] = user.interface
+                    return redirect_to_interface(user.interface)
+                else:
+                    messages.error(request, 'Неверный пароль')
+            except User.DoesNotExist:
+                messages.error(request, 'Пользователь не найден')
+        else:
+            messages.error(request, 'Заполните все поля')
+
+    return render(request, 'login.html')  # Теперь из корня templates
+
+
+def redirect_to_interface(interface):
+    """Перенаправление на соответствующий интерфейс"""
+    if interface == 'terminal':
+        return redirect('terminal_interface')
+    # Добавьте другие интерфейсы по мере необходимости
+    return redirect('terminal_interface')  # По умолчанию
+
+
+def logout_view(request):
+    request.session.flush()
+    return redirect('login')
+
+
+def login_required(view_func):
+    def wrapper(request, *args, **kwargs):
+        if 'user_id' not in request.session:
+            return redirect('login')
+        return view_func(request, *args, **kwargs)
+    return wrapper
+
+
+# ТЕРМИНАЛЬНЫЙ ИНТЕРФЕЙС
+@login_required
+def terminal_interface(request):
+    """Главная страница терминального интерфейса"""
     try:
-        # Получаем уникальные модели изделий
+        # Получаем уникальные модели изделий для начального отображения
         products = Product.objects.filter(quantity__gt=0).values_list('model', flat=True).distinct()
 
         products_data = []
@@ -25,13 +76,13 @@ def terminal_view(request):
         return render(request, 'terminal/terminal.html', {
             'products': products_data
         })
-
     except Exception as e:
         return render(request, 'terminal/terminal.html', {
             'products': []
         })
 
 
+# API endpoints (остаются без изменений)
 @csrf_exempt
 def api_products(request):
     """API для получения списка продуктов (изделий)"""
@@ -322,4 +373,3 @@ def api_check_promocode(request):
             'valid': False,
             'message': f'Ошибка проверки промокода: {str(e)}'
         }, status=500)
-

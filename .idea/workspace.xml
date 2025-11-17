@@ -5,21 +5,15 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="b03be4f4-a795-4972-b2f7-1611598ce511" name="Changes" comment="тот же самый код, но этот запускается хз что изменилось мб структура">
-      <change afterPath="$PROJECT_DIR$/requirements.txt" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/shop/terminal/static/terminal/terminal.js" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/shop/terminal/templates/base.html" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/shop/terminal/templates/terminal/navigation.html" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/shop/terminal/templates/terminal/step1_products.html" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/shop/terminal/templates/terminal/step2_models.html" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/shop/terminal/templates/terminal/step3_sizes.html" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/shop/terminal/templates/terminal/step4_prints.html" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/shop/terminal/templates/terminal/step5_confirmation.html" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/shop/terminal/templates/terminal/success_screen.html" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/shop/terminal/templates/terminal/terminal.html" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/shop/terminal/templates/login.html" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/shop/db.sqlite3" beforeDir="false" afterPath="$PROJECT_DIR$/shop/db.sqlite3" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/shop/shop/settings.py" beforeDir="false" afterPath="$PROJECT_DIR$/shop/shop/settings.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/shop/terminal/templates/terminal.html" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/shop/terminal/admin.py" beforeDir="false" afterPath="$PROJECT_DIR$/shop/terminal/admin.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/shop/terminal/migrations/0001_initial.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/shop/terminal/models.py" beforeDir="false" afterPath="$PROJECT_DIR$/shop/terminal/models.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/shop/terminal/templates/base.html" beforeDir="false" afterPath="$PROJECT_DIR$/shop/terminal/templates/terminal/base.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/shop/terminal/templates/terminal/terminal.html" beforeDir="false" afterPath="$PROJECT_DIR$/shop/terminal/templates/terminal/terminal.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/shop/terminal/urls.py" beforeDir="false" afterPath="$PROJECT_DIR$/shop/terminal/urls.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/shop/terminal/views.py" beforeDir="false" afterPath="$PROJECT_DIR$/shop/terminal/views.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
@@ -53,7 +47,7 @@
   <component name="GithubPullRequestsUISettings">{
   &quot;selectedUrlAndAccountId&quot;: {
     &quot;url&quot;: &quot;https://github.com/tce-reggie/crm.git&quot;,
-    &quot;accountId&quot;: &quot;360eb85f-f179-4925-a2ca-dbf3f1e6082b&quot;
+    &quot;accountId&quot;: &quot;8d50fdb6-1746-40a1-8445-8f2fb12d1427&quot;
   }
 }</component>
   <component name="ProjectColorInfo">{
@@ -64,22 +58,27 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent"><![CDATA[{
-  "keyToString": {
-    "DefaultHtmlFileTemplate": "HTML File",
-    "ModuleVcsDetector.initialDetectionPerformed": "true",
-    "Python.manage.executor": "Run",
-    "RunOnceActivity.ShowReadmeOnStart": "true",
-    "RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252": "true",
-    "RunOnceActivity.git.unshallow": "true",
-    "git-widget-placeholder": "dev__but__right__structure",
-    "last_opened_file_path": "C:/Users/MSI Katana/PycharmProjects/crm/shop/terminal/templates/terminal"
+  <component name="PropertiesComponent">{
+  &quot;keyToString&quot;: {
+    &quot;DefaultHtmlFileTemplate&quot;: &quot;HTML File&quot;,
+    &quot;ModuleVcsDetector.initialDetectionPerformed&quot;: &quot;true&quot;,
+    &quot;Python.manage.executor&quot;: &quot;Run&quot;,
+    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
+    &quot;git-widget-placeholder&quot;: &quot;dev__but__right__structure&quot;,
+    &quot;ignore.virus.scanning.warn.message&quot;: &quot;true&quot;,
+    &quot;last_opened_file_path&quot;: &quot;C:/Users/MSI Katana/PycharmProjects/crm/shop/terminal/templates/terminal&quot;
   }
-}]]></component>
+}</component>
   <component name="RecentsManager">
     <key name="CopyFile.RECENT_KEYS">
       <recent name="C:\Users\MSI Katana\PycharmProjects\crm\shop\terminal\templates\terminal" />
       <recent name="C:\Users\MSI Katana\PycharmProjects\crm\.venv\shop\terminal\templates" />
+    </key>
+    <key name="MoveFile.RECENT_KEYS">
+      <recent name="C:\Users\vadim\PycharmProjects\tce-reggie\crm\shop\terminal\templates\terminal" />
+      <recent name="C:\Users\vadim\PycharmProjects\tce-reggie\crm\shop\terminal\templates" />
     </key>
   </component>
   <component name="RunManager">

@@ -1,21 +1,45 @@
 from django.db import models
 
 
-# Таблица 1 - Список пользователей
+# Таблица 1 - Список пользователей и интерфейсов
 class User(models.Model):
-    ACCESS_LEVELS = [
+    INTERFACE_CHOICES = [
+        ('terminal', 'Терминал заказов'),
+        ('reception', 'Ресепшен'),
+        ('production', 'Производство'),
         ('admin', 'Администратор'),
-        ('manager', 'Менеджер'),
-        ('client', 'Клиент'),
     ]
 
-    phone_number = models.CharField(max_length=20, primary_key=True, verbose_name='Номер телефона')
-    name = models.CharField(max_length=100, verbose_name='Имя')
-    access_level = models.CharField(max_length=10, choices=ACCESS_LEVELS, verbose_name='Уровень доступа')
+    login = models.CharField(
+        max_length=50,
+        unique=True,
+        verbose_name='Логин'
+    )
+    password = models.CharField(
+        max_length=50,
+        verbose_name='Пароль'
+    )
+    interface = models.CharField(
+        max_length=20,
+        choices=INTERFACE_CHOICES,
+        default='terminal',
+        verbose_name='Интерфейс'
+    )
+
+    class Meta:
+        verbose_name = 'Пользователь'
+        verbose_name_plural = 'Пользователи'
 
     def __str__(self):
-        return f"{self.name} ({self.phone_number})"
+        return f"{self.login} ({self.interface})"
 
+    def get_interface_url(self):
+        """Возвращает URL интерфейса"""
+        return f"{self.interface}_interface"
+
+    def check_password(self, raw_password):
+        """Простая проверка пароля"""
+        return self.password == raw_password
 
 # Таблица 2 - Промокоды
 class PromoCode(models.Model):
