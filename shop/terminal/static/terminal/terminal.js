@@ -564,3 +564,228 @@ document.addEventListener('click', resetInactivityTimer);
 document.addEventListener('touchstart', resetInactivityTimer);
 document.addEventListener('scroll', resetInactivityTimer);
 document.addEventListener('mousemove', resetInactivityTimer);
+
+async function loadModels() {
+    if (!selectedProduct) return;
+
+    try {
+        const response = await fetch(`/api/models/?product_id=${selectedProduct.id}`);
+        const models = await response.json();
+
+        const container = document.getElementById('modelsContainer');
+        if (container) {
+            let html = '';
+            models.forEach(model => {
+                const colorStyle = model.color ? `style="background: ${getColorHex(model.color)}; ${getTextColor(model.color)}"` : '';
+                html += `
+                    <div class="model-card" onclick="selectModel('${model.id}', '${model.name.replace(/'/g, "\\'")}')">
+                        <div class="model-image" ${colorStyle}>${model.color || model.name}</div>
+                        <div class="model-title">${model.name}</div>
+                        <div class="model-description">Цена: ${model.base_price} руб.</div>
+                    </div>
+                `;
+            });
+            container.innerHTML = html;
+        }
+    } catch (error) {
+        console.error('Ошибка загрузки моделей:', error);
+        const container = document.getElementById('modelsContainer');
+        if (container) {
+            container.innerHTML = '<div class="error-message">Ошибка загрузки моделей</div>';
+        }
+    }
+}
+
+function getColorHex(colorName) {
+    const colorMap = {
+        'белый': '#ffffff', 'белая': '#ffffff',
+        'черный': '#000000', 'черная': '#000000',
+        'синий': '#1e3a8a', 'синяя': '#1e3a8a',
+        'красный': '#dc2626', 'красная': '#dc2626',
+        'зеленый': '#059669', 'зеленая': '#059669',
+        'серый': '#6b7280', 'серая': '#6b7280'
+    };
+    const lowerColor = colorName.toLowerCase();
+    return colorMap[lowerColor] || '#666666';
+}
+
+function getTextColor(colorName) {
+    const lightColors = ['белый', 'белая', 'желтый', 'желтая'];
+    return lightColors.includes(colorName.toLowerCase()) ? 'color: black;' : 'color: white;';
+}
+
+function selectSize(size, productId) {
+    selectedSize = {
+        size: size,
+        product_id: productId
+    };
+
+    // Обновляем выделение
+    document.querySelectorAll('#sizesContainer .size-card').forEach(card => {
+        card.classList.remove('selected');
+    });
+
+    // Находим и выделяем выбранную карточку
+    document.querySelectorAll('#sizesContainer .size-card').forEach(card => {
+        if (card.querySelector('.size-badge').textContent === size) {
+            card.classList.add('selected');
+        }
+    });
+
+    if (shouldSkipStep(4)) setTimeout(() => nextStep(), 500);
+}
+
+// Функция для генерации номера заказа
+function generateOrderNumber() {
+    const timestamp = Date.now().toString();
+    return timestamp.slice(-6);
+}
+
+// Функция сохранения заказа в localStorage
+function saveOrderToLocalStorage(orderData) {
+    try {
+        // Получаем текущие заказы
+        const existingOrders = JSON.parse(localStorage.getItem('orders')) || [];
+
+        // Добавляем новый заказ
+        existingOrders.push(orderData);
+
+        // Сохраняем обратно
+        localStorage.setItem('orders', JSON.stringify(existingOrders));
+
+        return true;
+    } catch (error) {
+        console.error('Ошибка сохранения заказа:', error);
+        return false;
+    }
+}
+
+// Функция отправки заказа в Google Sheets (опционально)
+async function saveOrderToGoogleSheets(orderData) {
+    const scriptURL = 'YOUR_GOOGLE_APPS_SCRIPT_URL';
+
+    try {
+        const response = await fetch(scriptURL, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(orderData)
+        });
+
+        const result = await response.json();
+        return result.success;
+    } catch (error) {
+        console.error('Ошибка отправки в Google Sheets:', error);
+        return false;
+    }
+}
+
+// Основная функция подтверждения заказа
+async function confirmOrder() {
+    // Собираем данные
+    const orderData = {
+        orderNumber: generateOrderNumber(),
+        product: document.getElementById('summaryProduct').innerText,
+        model: document.getElementById('summaryModel').innerText,
+        size: document.getElementById('summarySize').innerText,
+        print: document.getElementById('summaryPrint').innerText,
+        name: document.getElementById('customerName').value,
+        phone: document.getElementById('customerPhone').value,
+        timestamp: new Date().toISOString()
+    };
+
+    // Валидация
+    if (!orderData.name || !orderData.phone) {
+        alert('Пожалуйста, заполните ФИО и номер телефона');
+        return;
+    }
+
+    // Обновляем summary
+    document.getElementById('summaryName').textContent = orderData.name;
+    document.getElementById('summaryPhone').textContent = orderData.phone;
+
+    // Сохраняем в localStorage
+    const saved = saveOrderToLocalStorage(orderData);
+
+    if (saved) {
+        // Показываем экран успеха
+        showSuccessScreen(orderData.orderNumber);
+
+        // Опционально: отправляем в Google Sheets
+        // await saveOrderToGoogleSheets(orderData);
+    } else {
+        alert('Ошибка сохранения заказа');
+    }
+}
+
+// Функция показа экрана успеха
+function showSuccessScreen(orderNumber) {
+    const successScreen = document.getElementById('successScreen');
+    const orderNumberDisplay = document.getElementById('orderNumberDisplay');
+
+    orderNumberDisplay.textContent = orderNumber;
+    successScreen.style.display = 'flex';
+}
+
+// Функция сброса терминала
+function resetTerminal() {
+    // Скрываем экран успеха
+    document.getElementById('successScreen').style.display = 'none';
+
+    // Сбрасываем форму
+    document.getElementById('customerName').value = '';
+    document.getElementById('customerPhone').value = '';
+
+    // Возвращаемся к первому шагу
+    showStep(1);
+}
+
+// Инициализация
+document.addEventListener('DOMContentLoaded', function() {
+    // Добавляем обработчик для кнопки подтверждения
+    const confirmBtn = document.getElementById('confirmOrderBtn');
+    if (confirmBtn) {
+        confirmBtn.addEventListener('click', confirmOrder);
+    }
+
+    // Обновляем summary при вводе данных
+    const nameInput = document.getElementById('customerName');
+    const phoneInput = document.getElementById('customerPhone');
+
+    if (nameInput) {
+        nameInput.addEventListener('input', function() {
+            document.getElementById('summaryName').textContent = this.value || '-';
+        });
+    }
+
+    if (phoneInput) {
+        phoneInput.addEventListener('input', function() {
+            document.getElementById('summaryPhone').textContent = this.value || '-';
+        });
+    }
+});
+
+function viewAllOrders() {
+    const orders = JSON.parse(localStorage.getItem('orders')) || [];
+
+    if (orders.length === 0) {
+        alert('Нет сохраненных заказов');
+        return;
+    }
+
+    let ordersText = 'ВСЕ ЗАКАЗЫ:\n\n';
+    orders.forEach(order => {
+        ordersText += `Заказ #${order.orderNumber}\n`;
+        ordersText += `ФИО: ${order.name}\n`;
+        ordersText += `Телефон: ${order.phone}\n`;
+        ordersText += `Изделие: ${order.product}\n`;
+        ordersText += `Модель: ${order.model}\n`;
+        ordersText += `Размер: ${order.size}\n`;
+        ordersText += `Принт: ${order.print}\n`;
+        ordersText += `Дата: ${new Date(order.timestamp).toLocaleString()}\n`;
+        ordersText += '─'.repeat(30) + '\n';
+    });
+
+    alert(ordersText);
+}

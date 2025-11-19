@@ -7,10 +7,6 @@ from .models import Product, PrintDesign, Order, OrderPrint, User, PromoCode, Pr
 
 
 def login_view(request):
-    """Общий логин для всех интерфейсов"""
-    if 'user_id' in request.session:
-        return redirect_to_interface(request.session.get('user_interface'))
-
     if request.method == 'POST':
         login = request.POST.get('login')
         password = request.POST.get('password')
@@ -37,7 +33,6 @@ def redirect_to_interface(interface):
     """Перенаправление на соответствующий интерфейс"""
     if interface == 'terminal':
         return redirect('terminal_interface')
-    # Добавьте другие интерфейсы по мере необходимости
     return redirect('terminal_interface')  # По умолчанию
 
 
@@ -57,9 +52,7 @@ def login_required(view_func):
 # ТЕРМИНАЛЬНЫЙ ИНТЕРФЕЙС
 @login_required
 def terminal_interface(request):
-    """Главная страница терминального интерфейса"""
     try:
-        # Получаем уникальные модели изделий для начального отображения
         products = Product.objects.filter(quantity__gt=0).values_list('model', flat=True).distinct()
 
         products_data = []
@@ -82,7 +75,7 @@ def terminal_interface(request):
         })
 
 
-# API endpoints (остаются без изменений)
+# API endpoints
 @csrf_exempt
 def api_products(request):
     """API для получения списка продуктов (изделий)"""
@@ -99,7 +92,7 @@ def api_products(request):
                 'id': model_name,
                 'name': model_name,
                 'description': f"Доступные модели {model_name}",
-                'image': '#',  # В реальности нужно добавить поле image в модель
+                'image': '#',
                 'available_count': Product.objects.filter(model=model_name, quantity__gt=0).count()
             })
 

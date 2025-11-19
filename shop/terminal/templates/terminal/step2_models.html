@@ -1,36 +1,8 @@
 <div id="step2" class="step-container">
     <div class="step-header">ВЫБЕРИТЕ МОДЕЛЬ</div>
     <div class="models-grid" id="modelsContainer">
-        <div class="model-card" onclick="selectModel('Белая', 'Футболка - Белая')">
-            <div class="model-image" style="background: #ffffff; color: black;">Белая</div>
-            <div class="model-title">Белая модель</div>
-            <div class="model-description">Классический цвет</div>
-        </div>
-        <div class="model-card" onclick="selectModel('Черная', 'Футболка - Черная')">
-            <div class="model-image" style="background: #000000;">Черная</div>
-            <div class="model-title">Черная модель</div>
-            <div class="model-description">Стильный вариант</div>
-        </div>
-        <div class="model-card" onclick="selectModel('Синяя', 'Футболка - Синяя')">
-            <div class="model-image" style="background: #1e3a8a;">Синяя</div>
-            <div class="model-title">Синяя модель</div>
-            <div class="model-description">Яркий выбор</div>
-        </div>
-        <div class="model-card" onclick="selectModel('Красная', 'Футболка - Красная')">
-            <div class="model-image" style="background: #dc2626;">Красная</div>
-            <div class="model-title">Красная модель</div>
-            <div class="model-description">Смелый акцент</div>
-        </div>
-        <div class="model-card" onclick="selectModel('Зеленая', 'Футболка - Зеленая')">
-            <div class="model-image" style="background: #059669;">Зеленая</div>
-            <div class="model-title">Зеленая модель</div>
-            <div class="model-description">Свежий взгляд</div>
-        </div>
-        <div class="model-card" onclick="selectModel('Серая', 'Футболка - Серая')">
-            <div class="model-image" style="background: #6b7280;">Серая</div>
-            <div class="model-title">Серая модель</div>
-            <div class="model-description">Универсальный цвет</div>
-        </div>
+        <!-- Модели будут загружаться через JavaScript -->
+        <div class="loading-message">Загрузка моделей...</div>
     </div>
 </div>
 
@@ -86,4 +58,168 @@
     margin-top: 8px;
     opacity: 0.8;
 }
+.loading-message {
+    grid-column: 1 / -1;
+    text-align: center;
+    font-size: 1.5em;
+    padding: 50px;
+    color: #888;
+}
+.error-message {
+    grid-column: 1 / -1;
+    text-align: center;
+    font-size: 1.5em;
+    padding: 50px;
+    color: #ff4444;
+    background: #333;
+    border-radius: 15px;
+}
 </style>
+
+<script>
+// Функция для загрузки моделей при открытии шага 2
+function loadModels() {
+    if (!selectedProduct) {
+        document.getElementById('modelsContainer').innerHTML =
+            '<div class="error-message">Ошибка: продукт не выбран</div>';
+        return;
+    }
+
+    const modelsContainer = document.getElementById('modelsContainer');
+    modelsContainer.innerHTML = '<div class="loading-message">Загрузка моделей...</div>';
+
+    fetch(`/api/models/?product_id=${encodeURIComponent(selectedProduct.id)}`)
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Ошибка загрузки моделей');
+            }
+            return response.json();
+        })
+        .then(models => {
+            if (models.error) {
+                throw new Error(models.error);
+            }
+
+            if (models.length === 0) {
+                modelsContainer.innerHTML = `
+                    <div class="model-card" style="background: #333; grid-column: 1 / -1;">
+                        <div>Нет доступных моделей</div>
+                        <div class="model-description">Обратитесь к администратору</div>
+                    </div>
+                `;
+                return;
+            }
+
+            let modelsHTML = '';
+            models.forEach(model => {
+                const colorStyle = model.color ? `style="background: ${getColorHex(model.color)}; ${getTextColor(model.color)}"` : '';
+                const priceText = model.base_price ? `Цена: ${model.base_price} руб.` : 'Доступные цвета';
+
+                modelsHTML += `
+                    <div class="model-card" onclick="selectModel('${model.id}', '${escapeString(model.name)}')">
+                        <div class="model-image" ${colorStyle}>${model.color || model.name}</div>
+                        <div class="model-title">${model.name}</div>
+                        <div class="model-description">${priceText}</div>
+                    </div>
+                `;
+            });
+
+            modelsContainer.innerHTML = modelsHTML;
+        })
+        .catch(error => {
+            console.error('Error loading models:', error);
+            modelsContainer.innerHTML = `
+                <div class="error-message">
+                    Ошибка загрузки моделей: ${error.message}
+                    <br><br>
+                    <button onclick="loadModels()" style="padding: 10px 20px; background: #4CAF50; color: white; border: none; border-radius: 5px; cursor: pointer;">
+                        Попробовать снова
+                    </button>
+                </div>
+            `;
+        });
+}
+
+// Функция для экранирования строк (защита от XSS)
+function escapeString(str) {
+    return str.replace(/'/g, "\\'").replace(/"/g, '\\"');
+}
+
+// Функция для преобразования названия цвета в HEX
+function getColorHex(colorName) {
+    const colorMap = {
+        'белый': '#ffffff',
+        'белая': '#ffffff',
+        'черный': '#000000',
+        'черная': '#000000',
+        'синий': '#1e3a8a',
+        'синяя': '#1e3a8a',
+        'красный': '#dc2626',
+        'красная': '#dc2626',
+        'зеленый': '#059669',
+        'зеленая': '#059669',
+        'серый': '#6b7280',
+        'серая': '#6b7280',
+        'голубой': '#0ea5e9',
+        'голубая': '#0ea5e9',
+        'желтый': '#eab308',
+        'желтая': '#eab308',
+        'фиолетовый': '#7c3aed',
+        'фиолетовая': '#7c3aed',
+        'оранжевый': '#ea580c',
+        'оранжевая': '#ea580c',
+        'розовый': '#ec4899',
+        'розовая': '#ec4899',
+        'коричневый': '#92400e',
+        'коричневая': '#92400e'
+    };
+
+    const lowerColor = colorName.toLowerCase();
+    return colorMap[lowerColor] || '#666666';
+}
+
+// Функция для определения цвета текста (светлый/темный)
+function getTextColor(colorName) {
+    const lightColors = ['белый', 'белая', 'желтый', 'желтая'];
+    const lowerColor = colorName.toLowerCase();
+    return lightColors.includes(lowerColor) ? 'color: black;' : 'color: white;';
+}
+
+// Функция выбора модели
+function selectModel(modelId, modelName) {
+    selectedModel = { id: modelId, name: modelName };
+
+    // Обновляем выделение
+    document.querySelectorAll('#modelsContainer .model-card').forEach(card => {
+        card.classList.remove('selected');
+    });
+
+    // Находим и выделяем выбранную карточку
+    document.querySelectorAll('#modelsContainer .model-card').forEach(card => {
+        if (card.querySelector('.model-title').textContent === modelName) {
+            card.classList.add('selected');
+        }
+    });
+
+    nextStep();
+}
+
+// Загружаем модели когда шаг становится активным
+document.addEventListener('DOMContentLoaded', function() {
+    const observer = new MutationObserver(function(mutations) {
+        mutations.forEach(function(mutation) {
+            if (mutation.type === 'attributes' && mutation.attributeName === 'style') {
+                const step2 = document.getElementById('step2');
+                if (step2 && step2.style.display === 'flex') {
+                    loadModels();
+                }
+            }
+        });
+    });
+
+    const step2 = document.getElementById('step2');
+    if (step2) {
+        observer.observe(step2, { attributes: true, attributeFilter: ['style'] });
+    }
+});
+</script>
