@@ -1,334 +1,755 @@
-// ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ
-let currentStep = 1;
-let selectedProduct = null;
-let selectedModel = null;
-let selectedSize = null;
-let selectedPrint = null;
-let currentPrintObject = null;
-let inactivityTimer = null;
-
-// КОНСТАНТЫ API
+// =======================
+// НАСТРОЙКИ API
+// =======================
 const API_URLS = {
-    products: '/api/products/',
-    models: '/api/models/',
-    sizes: '/api/sizes/',
-    prints: '/api/prints/',
-    printAreas: '/api/print-areas/',
-    createOrder: '/api/orders/create/',
-    checkUser: '/api/check-user/',
-    checkPromocode: '/api/check-promocode/'
+    products: '/api/products/',      // Шаг 1
+    colors: '/api/colors/',          // Шаг 2
+    sizes: '/api/sizes/',            // Шаг 3
+    prints: '/api/prints/',          // Шаг 4
+    printAreas: '/api/print-areas/', // Шаг 4
+    createOrder: '/api/orders/create/', // Шаг 5
+    checkPromocode: '/api/check-promocode/',
 };
 
+// =======================
+// ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ
+// =======================
+let currentStep = 1;
+
+let selectedData = {
+    product: null,   // { model: название, first_product_id: id }
+    color: null,     // { name: название, product_id: id }
+    size: null,      // { id, size }
+};
+
+let inactivityTimer = null;
+
+// Зоны печати и принты
+let currentAreaId = null;
+let currentAreaConfig = null;   // {width, height, maxPrints}
+let areaPrints = {};            // areaId -> [{id,name,imageUrl,x,y,width,height,element}]
+
+// =======================
 // ЗАПУСК ПРИЛОЖЕНИЯ
+// =======================
 function startApplication() {
-    console.log('Запуск приложения...');
-    document.getElementById('screensaver').style.display = 'none';
-    document.getElementById('app').style.display = 'flex';
-    showStep(1);
+    console.log('startApplication вызвана');
+
+    const screensaver = document.getElementById('screensaver');
+    if (screensaver) screensaver.style.display = 'none';
+
+    const app = document.getElementById('app');
+    if (app) app.style.display = 'flex';
+
+    // Загружаем товары через API
+    loadProducts();
+
     resetInactivityTimer();
 }
 
-// ТАЙМЕР НЕАКТИВНОСТИ (10 минут)
+// =======================
+// ТАЙМЕР НЕАКТИВНОСТИ
+// =======================
 function resetInactivityTimer() {
     clearTimeout(inactivityTimer);
     inactivityTimer = setTimeout(() => {
-        if (currentStep !== 0) {
-            document.getElementById('screensaver').style.display = 'flex';
-            document.getElementById('app').style.display = 'none';
-            resetSelection();
-        }
+        window.location.reload();
     }, 10 * 60 * 1000);
 }
 
-// ЗАГРУЗКА НАЧАЛЬНЫХ ДАННЫХ
-async function loadInitialData() {
-    try {
-        await loadProducts();
-    } catch (error) {
-        console.error('Ошибка загрузки данных:', error);
+document.addEventListener('mousemove', resetInactivityTimer);
+document.addEventListener('click', resetInactivityTimer);
+document.addEventListener('touchstart', resetInactivityTimer);
+
+// =======================
+// НАВИГАЦИЯ ПО ШАГАМ
+// =======================
+function showStep(step) {
+    console.log(`showStep(${step}) вызвана`);
+
+    // 1. Скрываем все шаги
+    document.querySelectorAll('.step-container').forEach(c => {
+        c.style.display = 'none';
+        console.log(`Скрыт: ${c.id}`);
+    });
+
+    // 2. Показываем нужный шаг
+    const targetStep = document.getElementById(`step${step}`);
+    if (targetStep) {
+        targetStep.style.display = 'flex';  // Используем flex как у шага 1
+        console.log(`Показан: step${step}`);
+    } else {
+        console.error(`Шаг ${step} не найден!`);
+        return;
+    }
+
+    // 3. Обновляем текущий шаг
+    currentStep = step;
+    console.log(`Текущий шаг: ${currentStep}`);
+
+    // 4. Обновляем навигацию
+    updateNavigation();
+
+    // 5. Если это шаг 5, обновляем сводку
+    if (step === 5) {
+        updateOrderSummary();
     }
 }
 
-// НАВИГАЦИЯ
-function showStep(step) {
-    document.querySelectorAll('.step-container').forEach(container => {
-        container.style.display = 'none';
-    });
+function updateNavigation() {
+    const prevBtn = document.getElementById('prevBtn');
+    const nextBtn = document.getElementById('nextBtn');
+    const confirmBtn = document.getElementById('confirmBtn');
 
-    document.getElementById(`step${step}`).style.display = 'flex';
-    document.getElementById('prevBtn').disabled = step === 1;
-    document.getElementById('nextBtn').style.display = step === 5 ? 'none' : 'block';
-    document.getElementById('confirmBtn').style.display = step === 5 ? 'block' : 'none';
-
-    currentStep = step;
-    autoSkipSteps();
+    if (prevBtn) prevBtn.disabled = currentStep === 1;
+    if (nextBtn) nextBtn.style.display = currentStep === 5 ? 'none' : 'block';
+    if (confirmBtn) confirmBtn.style.display = currentStep === 5 ? 'block' : 'none';
 }
 
 function nextStep() {
-    console.log('Следующий шаг');
+    if (!validateCurrentStep()) return;
     if (currentStep < 5) {
         showStep(currentStep + 1);
     }
 }
 
 function previousStep() {
-    console.log('Предыдущий шаг');
     if (currentStep > 1) {
         showStep(currentStep - 1);
     }
 }
 
-// АВТОПРОПУСК ШАГОВ
-function autoSkipSteps() {
-    setTimeout(() => {
-        if (currentStep === 1 && shouldSkipStep(2)) {
-            nextStep();
-        } else if (currentStep === 2 && shouldSkipStep(3)) {
-            nextStep();
-        } else if (currentStep === 3 && shouldSkipStep(4)) {
-            nextStep();
-        }
-    }, 100);
-}
-
-// ЗАГРУЗКА ДАННЫХ ДЛЯ ШАГОВ
-async function loadStepData(step) {
-    switch(step) {
+function validateCurrentStep() {
+    switch (currentStep) {
+        case 1:
+            if (!selectedData.product) {
+                alert('Выберите товар');
+                return false;
+            }
+            return true;
         case 2:
-            await loadModels();
-            break;
+            if (!selectedData.color) {
+                alert('Выберите цвет');
+                return false;
+            }
+            return true;
         case 3:
-            await loadSizes();
-            break;
+            if (!selectedData.size) {
+                alert('Выберите размер');
+                return false;
+            }
+            return true;
         case 4:
-            await loadPrints();
-            await loadPrintAreas();
-            updateProductInfo();
-            break;
+            return true;
         case 5:
-            updateOrderSummary();
-            break;
+            return validateConfirmationForm();
+        default:
+            return true;
     }
 }
 
-// API ФУНКЦИИ
+//новая реализация шаг 1
 async function loadProducts() {
+    const container = document.getElementById('productsContainer');
+    if (!container) return;
+
+    container.innerHTML = '<div class="loading-message">Загрузка товаров...</div>';
+
     try {
         const response = await fetch(API_URLS.products);
         const products = await response.json();
-        displayProducts(products);
+
+        if (!products.length) {
+            container.innerHTML = '<div class="no-products-message">Нет доступных товаров</div>';
+            return;
+        }
+
+        container.innerHTML = '';
+        products.forEach(product => {
+            const card = document.createElement('div');
+            card.className = 'product-card';
+            card.dataset.model = product.model;
+            card.dataset.productId = product.product_id;
+
+            let imageHtml = '';
+            if (product.image_url) {
+                imageHtml = `
+                    <div class="product-image">
+                        <img src="${product.image_url}" alt="${product.model}">
+                    </div>
+                `;
+            } else {
+                imageHtml = `
+                    <div class="product-image">${product.model}</div>
+                `;
+            }
+
+            card.innerHTML = `
+                ${imageHtml}
+                <div class="product-title">${product.model}</div>
+            `;
+
+            card.onclick = () => {
+                selectProduct(product.model, product.product_id);
+            };
+
+            container.appendChild(card);
+        });
+
     } catch (error) {
-        console.error('Ошибка загрузки продуктов:', error);
-        displayProducts([]);
+        container.innerHTML = `<div class="error-message">Ошибка: ${error.message}</div>`;
     }
 }
 
-async function loadModels() {
-    if (!selectedProduct) return;
 
-    try {
-        const response = await fetch(`${API_URLS.models}?product_id=${selectedProduct.id}`);
-        const models = await response.json();
-        displayModels(models);
-    } catch (error) {
-        console.error('Ошибка загрузки моделей:', error);
-        displayModels([]);
-    }
+
+// =======================
+// ВЫБОР ПРОДУКТА / МОДЕЛИ / РАЗМЕРА
+// =======================
+
+// Шаг 1 — выбор модели товара
+function selectProduct(modelName, firstProductId) {
+    console.log('=== selectProduct вызвана ===');
+    console.log('Модель:', modelName);
+    console.log('ID первого товара:', firstProductId);
+
+    selectedData.product = {
+        model: modelName,
+        first_product_id: firstProductId
+    };
+
+    // Подсвечиваем выбранный товар
+    highlightSelection('productsContainer', modelName);
+
+    // Загружаем цвета для выбранной модели
+    loadColorsForModel(modelName);
+
+    // ПЕРЕХОДИМ К ШАГУ 2
+    setTimeout(() => {
+        console.log('Переходим к шагу 2...');
+        showStep(2);
+    }, 100);
 }
 
-async function loadSizes() {
-    if (!selectedProduct || !selectedModel) return;
 
-    try {
-        const response = await fetch(`${API_URLS.sizes}?product_model=${selectedProduct.id}&model_id=${selectedModel.id}`);
-        const sizes = await response.json();
-        displaySizes(sizes);
-    } catch (error) {
-        console.error('Ошибка загрузки размеров:', error);
-        displaySizes([]);
-    }
-}
-
-async function loadPrints() {
-    try {
-        const response = await fetch(API_URLS.prints);
-        const prints = await response.json();
-        displayPrints(prints);
-    } catch (error) {
-        console.error('Ошибка загрузки принтов:', error);
-        displayPrints([]);
-    }
-}
-
-async function loadPrintAreas() {
-    if (!selectedSize) return;
-
-    try {
-        const response = await fetch(`${API_URLS.printAreas}?product_id=${selectedSize.product_id}`);
-        const areas = await response.json();
-        setupPrintArea(areas);
-    } catch (error) {
-        console.error('Ошибка загрузки зон печати:', error);
-    }
-}
-
-// ОТОБРАЖЕНИЕ ДАННЫХ
-function displayProducts(products) {
-    const container = document.getElementById('productsContainer');
-    container.innerHTML = '';
-
-    products.forEach(product => {
-        const element = createSwipeElement(product.name, product.image, () => selectProduct(product));
-        container.appendChild(element);
-    });
-}
-
-function displayModels(models) {
-    const container = document.getElementById('modelsContainer');
-    container.innerHTML = '';
-
-    models.forEach(model => {
-        const element = createSwipeElement(model.name, model.image, () => selectModel(model));
-        container.appendChild(element);
-    });
-}
-
-function displaySizes(sizes) {
-    const container = document.getElementById('sizesContainer');
-    container.innerHTML = '';
-
-    sizes.forEach(sizeObj => {
-        const element = createSwipeElement(
-            `Размер: ${sizeObj.size}`,
-            null,
-            () => selectSize(sizeObj)
-        );
-        container.appendChild(element);
-    });
-}
-
-function displayPrints(prints) {
-    const container = document.getElementById('printsGallery');
-    container.innerHTML = '';
-
-    prints.forEach(print => {
-        const element = document.createElement('div');
-        element.className = `print-option ${print.type === 'custom' ? 'custom' : ''}`;
-        element.textContent = print.name;
-        element.onclick = () => selectPrint(print);
-        container.appendChild(element);
-    });
-}
-
-function createSwipeElement(text, image, onClick) {
-    const element = document.createElement('div');
-    element.className = 'swipe-item';
-    element.innerHTML = image ? `<img src="${image}" alt="${text}"><div>${text}</div>` : `<div>${text}</div>`;
-    element.onclick = onClick;
-    return element;
-}
-
-// ВЫБОР ЭЛЕМЕНТОВ
-function selectProduct(product) {
-    selectedProduct = product;
-    updateSelection('productsContainer', product.id);
-    if (shouldSkipStep(2)) setTimeout(() => nextStep(), 500);
-}
-
-function selectModel(model) {
-    selectedModel = model;
-    updateSelection('modelsContainer', model.id);
-    if (shouldSkipStep(3)) setTimeout(() => nextStep(), 500);
-}
-
-function selectSize(sizeObj) {
-    selectedSize = sizeObj;
-    updateSelection('sizesContainer', sizeObj.size);
-    if (shouldSkipStep(4)) setTimeout(() => nextStep(), 500);
-}
-
-function selectPrint(print) {
-    selectedPrint = print;
-    updateSelection('printsGallery', print.id);
-
-    if (print.type === 'custom') {
-        document.getElementById('customControls').style.display = 'block';
-    } else {
-        document.getElementById('customControls').style.display = 'none';
-        addPrintToArea(print);
-    }
-}
-
-function updateSelection(containerId, selectedId) {
+function highlightSelection(containerId, selectedId) {
     const container = document.getElementById(containerId);
-    container.querySelectorAll('.swipe-item, .print-option').forEach(item => {
-        item.classList.remove('selected');
+    if (!container) return;
+
+    container.querySelectorAll('.product-card, .model-card, .size-card').forEach(el => {
+        el.classList.remove('selected');
     });
 
-    const elements = container.querySelectorAll('.swipe-item, .print-option');
-    elements.forEach(element => {
-        if (element.textContent.includes(selectedId)) {
-            element.classList.add('selected');
+    container.querySelectorAll('[data-id]').forEach(el => {
+        if (el.dataset.id === String(selectedId)) {
+            el.classList.add('selected');
         }
     });
 }
 
-// РАБОТА С ПРИНТАМИ
-function setupPrintArea(areas) {
-    const printArea = document.getElementById('printArea');
-    if (areas && areas.length > 0) {
-        const area = areas[0];
-        printArea.style.width = `${area.width * 10}px`; // Масштабируем для отображения
-        printArea.style.height = `${area.height * 10}px`;
+// Шаг 2 — модели
+// Новая функция для загрузки цветов выбранной модели (шаг 2)
+// Функция загрузки цветов для выбранной модели
+async function loadColorsForModel(modelName) {
+    const container = document.getElementById('modelsContainer');
+    if (!container) return;
+
+    container.innerHTML = '<div class="loading-message">Загрузка цветов...</div>';
+
+    try {
+        const response = await fetch(`/api/colors/?model=${encodeURIComponent(modelName)}`);
+        const colors = await response.json();
+
+        if (!colors.length) {
+            container.innerHTML = '<div class="no-colors-message">Нет доступных цветов</div>';
+            return;
+        }
+
+        container.innerHTML = '';
+        colors.forEach(color => {
+            const colorCard = document.createElement('div');
+            colorCard.className = 'color-card';
+            colorCard.dataset.color = color.name;
+            colorCard.dataset.productId = color.product_id;
+
+            // Создаем изображение
+            let imageHtml = '';
+            if (color.image_url) {
+                imageHtml = `
+                    <div class="color-image">
+                        <img src="${color.image_url}" alt="${color.name}">
+                    </div>
+                `;
+            } else {
+                imageHtml = `
+                    <div class="color-image-placeholder">${color.name}</div>
+                `;
+            }
+
+            // ВАЖНО: Добавляем название цвета под изображением
+            colorCard.innerHTML = `
+                ${imageHtml}
+                <div class="color-name">${color.name}</div>  <!-- Это должно быть здесь! -->
+            `;
+
+            colorCard.onclick = () => {
+                selectColor(color.name, color.product_id);
+            };
+
+            container.appendChild(colorCard);
+        });
+
+    } catch (error) {
+        container.innerHTML = `<div class="error-message">Ошибка: ${error.message}</div>`;
     }
 }
 
-function addPrintToArea(print) {
+// Обработка выбора цвета
+function selectColor(colorName, productId) {
+    console.log('Выбран цвет:', colorName);
+    selectedData.color = {
+        name: colorName,
+        product_id: productId
+    };
+    // Подсвечиваем выбранный цвет
+    highlightColorSelection(colorName);
+
+    // Загружаем размеры и переходим к шагу 3
+    setTimeout(() => {
+        console.log('Переходим к шагу 3...');
+        showStep(3);
+
+        // Загружаем размеры для выбранной модели и цвета
+        if (selectedData.product && selectedData.product.model) {
+            loadSizesForModelAndColor(selectedData.product.model, colorName);
+        } else {
+            console.error('Не выбрана модель товара');
+        }
+    }, 200);
+}
+
+// Подсветка выбранного цвета
+function highlightColorSelection(colorName) {
+    const container = document.getElementById('modelsContainer');
+    if (!container) return;
+
+    container.querySelectorAll('.color-card').forEach(card => {
+        card.classList.remove('selected');
+        if (card.dataset.color === colorName) {
+            card.classList.add('selected');
+        }
+    });
+}
+
+// Загрузка размеров для модели и цвета (шаг 3 вроде)
+async function loadSizesForModelAndColor(modelName, colorName) {
+    console.log(`Загружаем размеры для модели "${modelName}" и цвета "${colorName}"`);
+
+    const container = document.getElementById('sizesContainer');
+    if (!container) {
+        console.error('Контейнер sizesContainer не найден');
+        return;
+    }
+
+    container.innerHTML = '<div class="loading-message">Загрузка размеров...</div>';
+
+    try {
+        const url = `/api/sizes/?model=${encodeURIComponent(modelName)}&color=${encodeURIComponent(colorName)}`;
+        console.log('Запрашиваем URL:', url);
+
+        const response = await fetch(url);
+        console.log('Ответ:', response.status, response.statusText);
+
+        if (!response.ok) {
+            throw new Error(`Ошибка HTTP: ${response.status}`);
+        }
+
+        const sizes = await response.json();
+        console.log('Получены размеры:', sizes);
+
+        if (!sizes || sizes.length === 0) {
+            container.innerHTML = '<div class="no-sizes-message">Нет доступных размеров</div>';
+            return;
+        }
+
+        container.innerHTML = '';
+        sizes.forEach(sizeObj => {
+            const card = document.createElement('div');
+            card.className = 'size-card';
+            card.dataset.id = sizeObj.id;
+
+            const isOut = sizeObj.quantity <= 0;
+
+            // Используем изображение если есть
+            let imageHtml = `<div class="size-badge">${sizeObj.size}</div>`;
+            if (sizeObj.image_url) {
+                imageHtml = `
+                    <div class="size-image">
+                        <img src="${sizeObj.image_url}" alt="Размер ${sizeObj.size}">
+                    </div>
+                `;
+            }
+
+            card.innerHTML = `
+                ${imageHtml}
+                <div class="size-title">${sizeObj.size}</div>
+                <div class="size-stock" style="color:${isOut ? '#ff6b6b' : '#90ee90'};">
+                    ${isOut ? 'Нет в наличии' : 'В наличии: ' + sizeObj.quantity + ' шт.'}
+                </div>
+            `;
+
+            if (!isOut) {
+                card.onclick = () => {
+                    console.log('Выбран размер:', sizeObj.size);
+                    selectSize(sizeObj.id, sizeObj.size, sizeObj.id);
+                };
+            } else {
+                card.style.opacity = '0.5';
+                card.style.cursor = 'not-allowed';
+            }
+
+            container.appendChild(card);
+        });
+
+    } catch (error) {
+        console.error('Ошибка загрузки размеров:', error);
+        container.innerHTML = `<div class="error-message">Ошибка загрузки размеров: ${error.message}</div>`;
+    }
+}
+//выбор нужного размера
+function selectSize(id, sizeLabel, productId) {
+    console.log('Выбран размер:', sizeLabel, 'ID товара:', productId);
+    selectedData.size = {
+        id,
+        size: sizeLabel,
+        product_id: productId  // Это ID конкретного товара в каталоге!
+    };
+    highlightSelection('sizesContainer', id);
+
+    // Переходим к шагу 4 и загружаем данные для него
+    setTimeout(() => {
+        console.log('Переходим к шагу 4...');
+        showStep(4);
+
+        // Загружаем данные для шага 4
+        loadStep4Data(productId);
+    }, 200);
+}
+
+// =======================
+// ШАГ 4: ЗОНЫ ПЕЧАТИ И ПРИНТЫ
+// =======================
+function switchArea(areaId, config) {
+    console.log('switchArea вызвана для зоны:', areaId);
+
+    currentAreaId = areaId;
+    currentAreaConfig = config;
+
+    // Активируем вкладку
+    document.querySelectorAll('.area-tab').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.areaId === areaId.toString());
+    });
+
+    // Обновляем информацию
+    const infoEl = document.getElementById('currentAreaInfo');
+    if (infoEl) {
+        const areaName = document.querySelector(`.area-tab[data-area-id="${areaId}"]`)?.textContent || 'Неизвестно';
+        infoEl.textContent = `Зона: ${areaName} | Максимум принтов: ${config.maxPrints}`;
+    }
+
+    // Показываем изображение зоны
+    const imageContainer = document.getElementById('productSideImageContainer');
+    if (imageContainer) {
+        if (config.imageUrl) {
+            imageContainer.innerHTML = `<img src="${config.imageUrl}" alt="Зона печати">`;
+        } else {
+            imageContainer.innerHTML = '<div class="no-image-message">Нет изображения зоны печати</div>';
+        }
+    }
+
+    // Настраиваем область печати
     const printArea = document.getElementById('printArea');
+    if (printArea) {
+        console.log('Настраиваем область печати:', config.width, 'x', config.height);
+
+        if (config.width && config.height) {
+            const scale = 5; // Уменьшаем масштаб для видимости
+            printArea.style.width = (config.width * scale) + 'px';
+            printArea.style.height = (config.height * scale) + 'px';
+
+            // Очищаем
+            printArea.innerHTML = '';
+
+            if (!areaPrints[areaId] || areaPrints[areaId].length === 0) {
+                const hint = document.createElement('div');
+                hint.className = 'print-area-hint';
+                hint.innerHTML = 'Выберите принт справа<br><span style="font-size:0.8em;">Перетащите его в область</span>';
+                printArea.appendChild(hint);
+            } else {
+                renderAreaPrints();
+            }
+        }
+    }
+
+    updateCurrentPrintsList();
+}
+
+
+
+// Выбор принта из галереи (step4_prints.html вызывает selectPrint(id, name, url))
+// Выбор принта из галереи
+// Выбор принта из галереи
+function selectPrint(id, name, imageUrl) {
+    console.log('=== selectPrint ===');
+    console.log('Принт:', name, 'ID:', id);
+    console.log('Текущая зона:', currentAreaId);
+    console.log('Конфиг зоны:', currentAreaConfig);
+    console.log('Принты в зоне:', areaPrints[currentAreaId] || []);
+
+    if (!currentAreaId || !currentAreaConfig) {
+        alert('Сначала выберите зону печати');
+        return;
+    }
+
+    const printsForArea = areaPrints[currentAreaId] || [];
+    if (printsForArea.length >= currentAreaConfig.maxPrints) {
+        alert(`Максимум ${currentAreaConfig.maxPrints} принтов для этой зоны`);
+        return;
+    }
+
+    const printArea = document.getElementById('printArea');
+    if (!printArea) {
+        console.error('Область печати не найдена');
+        return;
+    }
+
+    const defaultWidth = Math.min(printArea.clientWidth / 2, 150);
+    const defaultHeight = Math.min(printArea.clientHeight / 2, 150);
+
+    const newPrint = {
+        id,
+        name,
+        imageUrl: imageUrl || null,
+        x: (printArea.clientWidth - defaultWidth) / 2,
+        y: (printArea.clientHeight - defaultHeight) / 2,
+        width: defaultWidth,
+        height: defaultHeight
+    };
+
+    console.log('Новый принт:', newPrint);
+
+    // Проверяем пересечения
+    if (hasIntersectionWithAny(newPrint, printsForArea)) {
+        newPrint.x = 10;
+        newPrint.y = 10;
+    }
+
+    // Добавляем принт
+    if (!areaPrints[currentAreaId]) {
+        areaPrints[currentAreaId] = [];
+    }
+    areaPrints[currentAreaId].push(newPrint);
+
+    console.log('Обновленные принты в зоне:', areaPrints[currentAreaId]);
+
+    // Отрисовываем
+    renderAreaPrints();
+    updateCurrentPrintsList();
+}
+
+// Отрисовка принтов в зоне
+function renderAreaPrints() {
+    const printArea = document.getElementById('printArea');
+    if (!printArea || !currentAreaId) return;
+
     printArea.innerHTML = '';
+    const prints = areaPrints[currentAreaId] || [];
 
-    const printObj = document.createElement('div');
-    printObj.className = 'print-object';
-    printObj.textContent = print.name;
-    printObj.style.width = '100px';
-    printObj.style.height = '50px';
-    printObj.style.left = '50px';
-    printObj.style.top = '50px';
+    if (prints.length === 0) {
+        const hint = document.createElement('div');
+        hint.className = 'print-area-hint';
+        hint.innerHTML = 'Выберите принт справа<br><span style="font-size:0.8em;">Перетащите его в область</span>';
+        printArea.appendChild(hint);
+        return;
+    }
 
-    makeDraggable(printObj);
-    printArea.appendChild(printObj);
-    currentPrintObject = printObj;
+    prints.forEach(print => {
+        const printElement = createPrintElement(print);
+        printArea.appendChild(printElement);
+    });
+    updateCurrentPrintsList();
 }
 
-function applyCustomText() {
-    const text = document.getElementById('customText').value;
-    const font = document.getElementById('fontSelect').value;
+// Создание элемента принта
+function createPrintElement(print) {
+    const el = document.createElement('div');
+    el.className = 'print-object';
+    el.style.position = 'absolute';
+    el.style.left = print.x + 'px';
+    el.style.top = print.y + 'px';
+    el.style.width = print.width + 'px';
+    el.style.height = print.height + 'px';
+    el.style.border = '1px dashed #fff';
+    el.style.cursor = 'move';
+    el.style.overflow = 'hidden';
+    el.dataset.printId = print.id;
 
-    if (text && selectedPrint) {
-        const printArea = document.getElementById('printArea');
-        printArea.innerHTML = '';
+    if (print.imageUrl) {
+        el.innerHTML = `<img src="${print.imageUrl}" style="width:100%; height:100%; object-fit:contain;">`;
+    } else {
+        el.textContent = print.name;
+        el.style.display = 'flex';
+        el.style.alignItems = 'center';
+        el.style.justifyContent = 'center';
+        el.style.fontSize = '12px';
+        el.style.background = 'rgba(0,0,0,0.3)';
+    }
 
-        const textObj = document.createElement('div');
-        textObj.className = 'print-object';
-        textObj.textContent = text;
-        textObj.style.fontFamily = font;
-        textObj.style.width = '150px';
-        textObj.style.height = '40px';
-        textObj.style.left = '50px';
-        textObj.style.top = '50px';
+    // Делаем перетаскиваемым
+    makeDraggableWithConstraints(el, print);
+    return el;
+}
 
-        makeDraggable(textObj);
-        printArea.appendChild(textObj);
-        currentPrintObject = textObj;
+//функции для шага 4
+async function loadStep4Data(productId) {
+    console.log('=== loadStep4Data ===');
+    console.log('Product ID:', productId);
+    console.log('selectedData:', selectedData);
+    console.log('Загружаем данные для шага 4, product_id:', productId);
+
+    // Обновляем информацию о товаре
+    updateProductInfo();
+
+    // Загружаем принты
+    await loadPrints();
+
+    // Загружаем зоны печати для этого товара
+    await loadPrintAreas(productId);
+}
+
+// Загрузка всех принтов
+async function loadPrints() {
+    const container = document.getElementById('printsGallery');
+    if (!container) return;
+
+    container.innerHTML = '<div class="loading-message-small">Загрузка принтов...</div>';
+
+    try {
+        const response = await fetch(API_URLS.prints);
+        const prints = await response.json();
+
+        if (!prints.length) {
+            container.innerHTML = '<div class="no-prints-message">Нет доступных принтов</div>';
+            return;
+        }
+
+        container.innerHTML = '';
+        prints.forEach(print => {
+            const printCard = document.createElement('div');
+            printCard.className = 'print-card';
+            printCard.dataset.printId = print.id;
+            printCard.dataset.printName = print.name;
+            printCard.dataset.imageUrl = print.image_url || '';
+
+            let iconHtml = '';
+            if (print.image_url) {
+                iconHtml = `<img src="${print.image_url}" alt="${print.name}">`;
+            } else {
+                iconHtml = `<div class="print-icon-placeholder">${print.name.charAt(0)}</div>`;
+            }
+
+            printCard.innerHTML = `
+                <div class="print-icon">${iconHtml}</div>
+                <div class="print-name">${print.name}</div>
+            `;
+
+            printCard.onclick = () => {
+                selectPrint(print.id, print.name, print.image_url);
+            };
+
+            container.appendChild(printCard);
+        });
+
+    } catch (error) {
+        console.error('Ошибка загрузки принтов:', error);
+        container.innerHTML = `<div class="error-message">Ошибка загрузки принтов</div>`;
     }
 }
 
-// Drag & Drop функциональность (остается без изменений)
-function makeDraggable(element) {
+// Загрузка зон печати для товара
+async function loadPrintAreas(productId) {
+    console.log('loadPrintAreas для productId:', productId);
+
+    const tabsContainer = document.getElementById('printAreasTabs');
+    const imageContainer = document.getElementById('productSideImageContainer');
+
+    if (!tabsContainer || !imageContainer) {
+        console.error('Контейнеры не найдены!');
+        return;
+    }
+
+    tabsContainer.innerHTML = '<div class="loading-message-small">Загрузка зон печати...</div>';
+    imageContainer.innerHTML = '<div class="loading-message-small">Загрузка изображения...</div>';
+
+    try {
+        const url = `${API_URLS.printAreas}?product_id=${productId}`;
+        console.log('Запрашиваем URL:', url);
+
+        const response = await fetch(url);
+        const areas = await response.json();
+
+        console.log('Получены зоны печати:', areas);
+
+        if (!areas.length) {
+            tabsContainer.innerHTML = '<div class="no-areas-message">Для этого товара нет зон печати</div>';
+            imageContainer.innerHTML = '<div class="no-image-message">Нет изображений зон печати</div>';
+            return;
+        }
+
+        // Создаем вкладки
+        tabsContainer.innerHTML = '';
+        areas.forEach((area, index) => {
+            const tab = document.createElement('button');
+            tab.className = 'area-tab';
+            if (index === 0) tab.classList.add('active');
+
+            tab.dataset.areaId = area.id;
+            tab.textContent = area.area_name;
+
+            tab.onclick = () => {
+                switchArea(area.id, {
+                    width: area.width,
+                    height: area.height,
+                    maxPrints: area.max_prints,
+                    imageUrl: area.image_url
+                });
+            };
+
+            tabsContainer.appendChild(tab);
+        });
+
+        // Показываем первую зону
+        if (areas[0]) {
+            switchArea(areas[0].id, {
+                width: areas[0].width,
+                height: areas[0].height,
+                maxPrints: areas[0].max_prints,
+                imageUrl: areas[0].image_url
+            });
+        }
+
+    } catch (error) {
+        console.error('Ошибка загрузки зон печати:', error);
+        tabsContainer.innerHTML = `<div class="error-message">Ошибка загрузки зон печати: ${error.message}</div>`;
+    }
+}
+
+//крутые штуки для шага 4
+function makeDraggableWithConstraints(el, printObj) {
     let pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0;
 
-    element.onmousedown = dragMouseDown;
-    element.ontouchstart = dragTouchStart;
+    el.onmousedown = dragMouseDown;
+    el.ontouchstart = dragTouchStart;
 
     function dragMouseDown(e) {
         e.preventDefault();
@@ -348,22 +769,56 @@ function makeDraggable(element) {
 
     function elementDrag(e) {
         e.preventDefault();
+        const printArea = document.getElementById('printArea');
+        if (!printArea) return;
+
         pos1 = pos3 - e.clientX;
         pos2 = pos4 - e.clientY;
         pos3 = e.clientX;
         pos4 = e.clientY;
-        element.style.top = (element.offsetTop - pos2) + "px";
-        element.style.left = (element.offsetLeft - pos1) + "px";
+
+        let newTop = el.offsetTop - pos2;
+        let newLeft = el.offsetLeft - pos1;
+
+        newLeft = Math.max(0, Math.min(newLeft, printArea.clientWidth - el.offsetWidth));
+        newTop = Math.max(0, Math.min(newTop, printArea.clientHeight - el.offsetHeight));
+
+        const tempPrint = { ...printObj, x: newLeft, y: newTop };
+
+        if (!hasIntersectionWithAny(tempPrint, areaPrints[currentAreaId], printObj)) {
+            el.style.top = newTop + 'px';
+            el.style.left = newLeft + 'px';
+            printObj.x = newTop;
+            printObj.y = newLeft;
+            updateCurrentPrintsList();
+        }
     }
 
     function elementDragTouch(e) {
         const touch = e.touches[0];
+        const printArea = document.getElementById('printArea');
+        if (!printArea) return;
+
         pos1 = pos3 - touch.clientX;
         pos2 = pos4 - touch.clientY;
         pos3 = touch.clientX;
         pos4 = touch.clientY;
-        element.style.top = (element.offsetTop - pos2) + "px";
-        element.style.left = (element.offsetLeft - pos1) + "px";
+
+        let newTop = el.offsetTop - pos2;
+        let newLeft = el.offsetLeft - pos1;
+
+        newLeft = Math.max(0, Math.min(newLeft, printArea.clientWidth - el.offsetWidth));
+        newTop = Math.max(0, Math.min(newTop, printArea.clientHeight - el.offsetHeight));
+
+        const tempPrint = { ...printObj, x: newLeft, y: newTop };
+
+        if (!hasIntersectionWithAny(tempPrint, areaPrints[currentAreaId], printObj)) {
+            el.style.top = newTop + 'px';
+            el.style.left = newLeft + 'px';
+            printObj.x = newLeft;
+            printObj.y = newTop;
+            updateCurrentPrintsList();
+        }
     }
 
     function closeDragElement() {
@@ -374,102 +829,111 @@ function makeDraggable(element) {
     }
 }
 
-// ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ
-function shouldSkipStep(step) {
-    return false; // В реальности можно добавить логику пропуска
+function rectanglesIntersect(a, b) {
+    return !(
+        a.x + a.width <= b.x ||
+        a.x >= b.x + b.width ||
+        a.y + a.height <= b.y ||
+        a.y >= b.y + b.height
+    );
 }
 
-function canProceedToNextStep() {
-    switch(currentStep) {
-        case 1: return selectedProduct !== null;
-        case 2: return selectedModel !== null;
-        case 3: return selectedSize !== null;
-        case 4: return selectedPrint !== null && currentPrintObject !== null;
-        case 5: return validateConfirmation();
-        default: return false;
+function hasIntersectionWithAny(printObj, otherPrints, ignorePrint = null) {
+    if (!otherPrints) return false;
+    for (const p of otherPrints) {
+        if (ignorePrint && p === ignorePrint) continue;
+        if (rectanglesIntersect(printObj, p)) return true;
     }
+    return false;
 }
 
-function getNextStepNumber() {
-    switch(currentStep) {
-        case 1: return shouldSkipStep(2) ? 3 : 2;
-        case 2: return shouldSkipStep(3) ? 4 : 3;
-        case 3: return shouldSkipStep(4) ? 5 : 4;
-        default: return currentStep + 1;
-    }
-}
+function updateCurrentPrintsList() {
+    const listEl = document.getElementById('currentPrintsList');
+    if (!listEl || !currentAreaId) return;
 
-function getPreviousStepNumber() {
-    switch(currentStep) {
-        case 3: return shouldSkipStep(2) ? 1 : 2;
-        case 4: return shouldSkipStep(3) ? 2 : 3;
-        case 5: return shouldSkipStep(4) ? 3 : 4;
-        default: return currentStep - 1;
-    }
-}
+    listEl.innerHTML = '';
+    const prints = areaPrints[currentAreaId] || [];
 
-function validateConfirmation() {
-    const name = document.getElementById('customerName').value.trim();
-    const phone = document.getElementById('customerPhone').value.trim();
-
-    if (name === '') {
-        alert('Пожалуйста, введите ваше ФИО');
-        return false;
-    }
-
-    if (phone === '') {
-        alert('Пожалуйста, введите номер телефона');
-        return false;
-    }
-
-    return true;
-}
-
-function updateProductInfo() {
-    const infoText = `Модель: ${selectedModel?.name || '-'} | Размер: ${selectedSize?.size || '-'}`;
-    document.getElementById('productInfoText').textContent = infoText;
-}
-
-function updateOrderSummary() {
-    document.getElementById('summaryProduct').textContent = selectedProduct?.name || '-';
-    document.getElementById('summaryModel').textContent = selectedModel?.name || '-';
-    document.getElementById('summarySize').textContent = selectedSize?.size || '-';
-    document.getElementById('summaryPrint').textContent = selectedPrint?.name || '-';
-    document.getElementById('summaryName').textContent = document.getElementById('customerName').value;
-    document.getElementById('summaryPhone').textContent = document.getElementById('customerPhone').value;
-}
-
-function toggleNotificationInput() {
-    const type = document.getElementById('notificationType').value;
-    const contactInput = document.getElementById('notificationContact');
-    contactInput.style.display = type === 'none' ? 'none' : 'block';
-    contactInput.placeholder = type === 'email' ? 'Email адрес' :
-                             type === 'sms' ? 'Номер телефона' :
-                             'Контакт для уведомления';
-}
-
-// ОФОРМЛЕНИЕ ЗАКАЗА
-async function submitOrder() {
-    if (!validateConfirmation()) {
+    if (!prints.length) {
+        listEl.innerHTML = '<li>Принтов на этой зоне нет</li>';
         return;
     }
 
+    prints.forEach((p, index) => {
+        const li = document.createElement('li');
+        li.textContent = `${index + 1}. ${p.name} — x: ${Math.round(p.x)}, y: ${Math.round(p.y)}`;
+        listEl.appendChild(li);
+    });
+}
+
+// =======================
+// ОБНОВЛЕНИЕ ИНФОРМАЦИИ О ТОВАРЕ (ШАГ 4)
+// =======================
+
+function updateProductInfo() {
+    console.log('updateProductInfo вызвана');
+
+    const productName = selectedData.product?.model || '-';
+    const color = selectedData.color?.name || '-';
+    const size = selectedData.size?.size || '-';
+
+    const text = `Модель: ${productName} | Цвет: ${color} | Размер: ${size}`;
+    const el = document.getElementById('productInfoText');
+    if (el) {
+        el.textContent = text;
+        console.log('Обновлена информация:', text);
+    } else {
+        console.error('Элемент productInfoText не найден!');
+    }
+}
+// =======================
+// ШАГ 5: ПОДТВЕРЖДЕНИЕ
+// =======================
+function setText(id, text) {
+    const el = document.getElementById(id);
+    if (el) el.textContent = text || '-';
+}
+
+function updateOrderSummary() {
+    setText('summaryProduct', selectedData.product?.model || '-');
+    setText('summaryModel', selectedData.color?.name || '-');  // Исправьте с model на color
+    setText('summarySize', selectedData.size?.size || '-');
+
+    // Добавьте информацию о принтах
+    let printsSummary = 'Нет принтов';
+    const totalPrints = Object.values(areaPrints).reduce((sum, arr) => sum + arr.length, 0);
+    if (totalPrints > 0) {
+        printsSummary = `${totalPrints} принт(ов) на ${Object.keys(areaPrints).length} зоне(ах)`;
+    }
+    setText('summaryPrint', printsSummary);
+}
+
+// Валидация формы клиента
+function validateConfirmationForm() {
+    const name = document.getElementById('customerName').value.trim();
+    const phone = document.getElementById('customerPhone').value.trim();
+
+    if (!name || !phone) {
+        alert('Пожалуйста, заполните ФИО и телефон');
+        return false;
+    }
+    return true;
+}
+
+// =======================
+// ОТПРАВКА ЗАКАЗА
+// =======================
+async function submitOrder() {
+    if (!validateConfirmationForm()) return;
+
     const orderData = {
-        product_id: selectedSize?.product_id,
+        product_id: selectedData.size.product_id, // ID конкретного товара
         customer_name: document.getElementById('customerName').value,
         phone_number: document.getElementById('customerPhone').value,
-        print_id: selectedPrint?.id,
-        notification_type: document.getElementById('notificationType').value,
-        notification_contact: document.getElementById('notificationContact').value,
-        position_x: getPrintPosition()?.x || 50,
-        position_y: getPrintPosition()?.y || 50
+        prints: collectPrintsPayload()
     };
 
-    // Проверка промокода
-    const promocode = document.getElementById('promocode')?.value;
-    if (promocode) {
-        orderData.promocode = promocode;
-    }
+    console.log('Отправляем заказ:', orderData);
 
     try {
         const response = await fetch(API_URLS.createOrder, {
@@ -484,308 +948,30 @@ async function submitOrder() {
         const result = await response.json();
 
         if (response.ok && result.success) {
-            showSuccessScreen(result.order_number);
+            document.getElementById('orderNumberDisplay').textContent = result.order_number;
+            document.getElementById('successScreen').style.display = 'flex';
+            document.getElementById('app').style.display = 'none';
         } else {
             throw new Error(result.error || 'Ошибка сервера');
         }
-    } catch (error) {
-        alert('Ошибка при создании заказа: ' + error.message);
+    } catch (e) {
+        alert('Ошибка при создании заказа: ' + e.message);
     }
 }
 
-function getPrintPosition() {
-    if (!currentPrintObject) return null;
-
-    return {
-        x: parseInt(currentPrintObject.style.left) || 50,
-        y: parseInt(currentPrintObject.style.top) || 50
-    };
-}
-
-function getCSRFToken() {
-    const name = 'csrftoken';
-    let cookieValue = null;
-
-    if (document.cookie && document.cookie !== '') {
-        const cookies = document.cookie.split(';');
-        for (let i = 0; i < cookies.length; i++) {
-            const cookie = cookies[i].trim();
-            if (cookie.substring(0, name.length + 1) === (name + '=')) {
-                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
-                break;
-            }
-        }
-    }
-
-    return cookieValue;
-}
-
-function showSuccessScreen(orderNumber) {
-    document.getElementById('orderNumberDisplay').textContent = orderNumber;
-    document.getElementById('successScreen').style.display = 'flex';
-    currentStep = 0;
-}
-
-function resetTerminal() {
-    document.getElementById('successScreen').style.display = 'none';
-    resetSelection();
-    showStep(1);
-    resetInactivityTimer();
-}
-
-function resetSelection() {
-    selectedProduct = null;
-    selectedModel = null;
-    selectedSize = null;
-    selectedPrint = null;
-    currentPrintObject = null;
-
-    // Сброс форм
-    document.getElementById('customerName').value = '';
-    document.getElementById('customerPhone').value = '';
-    document.getElementById('notificationType').value = 'none';
-    document.getElementById('notificationContact').value = '';
-    document.getElementById('notificationContact').style.display = 'none';
-    document.getElementById('customText').value = '';
-    document.getElementById('customControls').style.display = 'none';
-
-    // Сброс выделений
-    document.querySelectorAll('.selected').forEach(item => {
-        item.classList.remove('selected');
-    });
-
-    // Очистка области предпросмотра
-    const printArea = document.getElementById('printArea');
-    if (printArea) printArea.innerHTML = '';
-}
-
-// СЛУШАТЕЛИ СОБЫТИЙ
-document.addEventListener('click', resetInactivityTimer);
-document.addEventListener('touchstart', resetInactivityTimer);
-document.addEventListener('scroll', resetInactivityTimer);
-document.addEventListener('mousemove', resetInactivityTimer);
-
-async function loadModels() {
-    if (!selectedProduct) return;
-
-    try {
-        const response = await fetch(`/api/models/?product_id=${selectedProduct.id}`);
-        const models = await response.json();
-
-        const container = document.getElementById('modelsContainer');
-        if (container) {
-            let html = '';
-            models.forEach(model => {
-                const colorStyle = model.color ? `style="background: ${getColorHex(model.color)}; ${getTextColor(model.color)}"` : '';
-                html += `
-                    <div class="model-card" onclick="selectModel('${model.id}', '${model.name.replace(/'/g, "\\'")}')">
-                        <div class="model-image" ${colorStyle}>${model.color || model.name}</div>
-                        <div class="model-title">${model.name}</div>
-                        <div class="model-description">Цена: ${model.base_price} руб.</div>
-                    </div>
-                `;
+function collectPrintsPayload() {
+    const payload = [];
+    Object.keys(areaPrints).forEach(areaId => {
+        areaPrints[areaId].forEach(p => {
+            payload.push({
+                area_id: areaId,
+                print_id: p.id,
+                x: p.x,
+                y: p.y,
+                width: p.width,
+                height: p.height
             });
-            container.innerHTML = html;
-        }
-    } catch (error) {
-        console.error('Ошибка загрузки моделей:', error);
-        const container = document.getElementById('modelsContainer');
-        if (container) {
-            container.innerHTML = '<div class="error-message">Ошибка загрузки моделей</div>';
-        }
-    }
-}
-
-function getColorHex(colorName) {
-    const colorMap = {
-        'белый': '#ffffff', 'белая': '#ffffff',
-        'черный': '#000000', 'черная': '#000000',
-        'синий': '#1e3a8a', 'синяя': '#1e3a8a',
-        'красный': '#dc2626', 'красная': '#dc2626',
-        'зеленый': '#059669', 'зеленая': '#059669',
-        'серый': '#6b7280', 'серая': '#6b7280'
-    };
-    const lowerColor = colorName.toLowerCase();
-    return colorMap[lowerColor] || '#666666';
-}
-
-function getTextColor(colorName) {
-    const lightColors = ['белый', 'белая', 'желтый', 'желтая'];
-    return lightColors.includes(colorName.toLowerCase()) ? 'color: black;' : 'color: white;';
-}
-
-function selectSize(size, productId) {
-    selectedSize = {
-        size: size,
-        product_id: productId
-    };
-
-    // Обновляем выделение
-    document.querySelectorAll('#sizesContainer .size-card').forEach(card => {
-        card.classList.remove('selected');
-    });
-
-    // Находим и выделяем выбранную карточку
-    document.querySelectorAll('#sizesContainer .size-card').forEach(card => {
-        if (card.querySelector('.size-badge').textContent === size) {
-            card.classList.add('selected');
-        }
-    });
-
-    if (shouldSkipStep(4)) setTimeout(() => nextStep(), 500);
-}
-
-// Функция для генерации номера заказа
-function generateOrderNumber() {
-    const timestamp = Date.now().toString();
-    return timestamp.slice(-6);
-}
-
-// Функция сохранения заказа в localStorage
-function saveOrderToLocalStorage(orderData) {
-    try {
-        // Получаем текущие заказы
-        const existingOrders = JSON.parse(localStorage.getItem('orders')) || [];
-
-        // Добавляем новый заказ
-        existingOrders.push(orderData);
-
-        // Сохраняем обратно
-        localStorage.setItem('orders', JSON.stringify(existingOrders));
-
-        return true;
-    } catch (error) {
-        console.error('Ошибка сохранения заказа:', error);
-        return false;
-    }
-}
-
-// Функция отправки заказа в Google Sheets (опционально)
-async function saveOrderToGoogleSheets(orderData) {
-    const scriptURL = 'YOUR_GOOGLE_APPS_SCRIPT_URL';
-
-    try {
-        const response = await fetch(scriptURL, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(orderData)
         });
-
-        const result = await response.json();
-        return result.success;
-    } catch (error) {
-        console.error('Ошибка отправки в Google Sheets:', error);
-        return false;
-    }
-}
-
-// Основная функция подтверждения заказа
-async function confirmOrder() {
-    // Собираем данные
-    const orderData = {
-        orderNumber: generateOrderNumber(),
-        product: document.getElementById('summaryProduct').innerText,
-        model: document.getElementById('summaryModel').innerText,
-        size: document.getElementById('summarySize').innerText,
-        print: document.getElementById('summaryPrint').innerText,
-        name: document.getElementById('customerName').value,
-        phone: document.getElementById('customerPhone').value,
-        timestamp: new Date().toISOString()
-    };
-
-    // Валидация
-    if (!orderData.name || !orderData.phone) {
-        alert('Пожалуйста, заполните ФИО и номер телефона');
-        return;
-    }
-
-    // Обновляем summary
-    document.getElementById('summaryName').textContent = orderData.name;
-    document.getElementById('summaryPhone').textContent = orderData.phone;
-
-    // Сохраняем в localStorage
-    const saved = saveOrderToLocalStorage(orderData);
-
-    if (saved) {
-        // Показываем экран успеха
-        showSuccessScreen(orderData.orderNumber);
-
-        // Опционально: отправляем в Google Sheets
-        // await saveOrderToGoogleSheets(orderData);
-    } else {
-        alert('Ошибка сохранения заказа');
-    }
-}
-
-// Функция показа экрана успеха
-function showSuccessScreen(orderNumber) {
-    const successScreen = document.getElementById('successScreen');
-    const orderNumberDisplay = document.getElementById('orderNumberDisplay');
-
-    orderNumberDisplay.textContent = orderNumber;
-    successScreen.style.display = 'flex';
-}
-
-// Функция сброса терминала
-function resetTerminal() {
-    // Скрываем экран успеха
-    document.getElementById('successScreen').style.display = 'none';
-
-    // Сбрасываем форму
-    document.getElementById('customerName').value = '';
-    document.getElementById('customerPhone').value = '';
-
-    // Возвращаемся к первому шагу
-    showStep(1);
-}
-
-// Инициализация
-document.addEventListener('DOMContentLoaded', function() {
-    // Добавляем обработчик для кнопки подтверждения
-    const confirmBtn = document.getElementById('confirmOrderBtn');
-    if (confirmBtn) {
-        confirmBtn.addEventListener('click', confirmOrder);
-    }
-
-    // Обновляем summary при вводе данных
-    const nameInput = document.getElementById('customerName');
-    const phoneInput = document.getElementById('customerPhone');
-
-    if (nameInput) {
-        nameInput.addEventListener('input', function() {
-            document.getElementById('summaryName').textContent = this.value || '-';
-        });
-    }
-
-    if (phoneInput) {
-        phoneInput.addEventListener('input', function() {
-            document.getElementById('summaryPhone').textContent = this.value || '-';
-        });
-    }
-});
-
-function viewAllOrders() {
-    const orders = JSON.parse(localStorage.getItem('orders')) || [];
-
-    if (orders.length === 0) {
-        alert('Нет сохраненных заказов');
-        return;
-    }
-
-    let ordersText = 'ВСЕ ЗАКАЗЫ:\n\n';
-    orders.forEach(order => {
-        ordersText += `Заказ #${order.orderNumber}\n`;
-        ordersText += `ФИО: ${order.name}\n`;
-        ordersText += `Телефон: ${order.phone}\n`;
-        ordersText += `Изделие: ${order.product}\n`;
-        ordersText += `Модель: ${order.model}\n`;
-        ordersText += `Размер: ${order.size}\n`;
-        ordersText += `Принт: ${order.print}\n`;
-        ordersText += `Дата: ${new Date(order.timestamp).toLocaleString()}\n`;
-        ordersText += '─'.repeat(30) + '\n';
     });
-
-    alert(ordersText);
+    return payload;
 }

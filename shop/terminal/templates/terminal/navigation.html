@@ -1,40 +1,11 @@
 <div class="navigation">
-    <button class="nav-btn" onclick="previousStep()" id="prevBtn" disabled>НАЗАД</button>
-    <button class="nav-btn" onclick="nextStep()" id="nextBtn">ДАЛЕЕ</button>
-    <button class="nav-btn confirm" onclick="submitOrder()" id="confirmBtn" style="display: none;">ПОДТВЕРДИТЬ</button>
+    <button class="nav-btn" id="prevBtn" onclick="previousStep()" disabled>
+        НАЗАД
+    </button>
+    <button class="nav-btn" id="nextBtn" onclick="nextStep()">
+        ДАЛЕЕ
+    </button>
+    <button class="nav-btn confirm" id="confirmBtn" onclick="submitOrder()" style="display:none;">
+        ПОДТВЕРДИТЬ
+    </button>
 </div>
-
-<style>
-.navigation {
-    display: flex;
-    justify-content: space-between;
-    padding: 25px 30px;
-    background: #333;
-    border-top: 3px solid #555;
-}
-.nav-btn {
-    padding: 20px 40px;
-    font-size: 1.5em;
-    background: #555;
-    color: white;
-    border: none;
-    border-radius: 15px;
-    cursor: pointer;
-    min-width: 150px;
-    transition: background 0.3s ease;
-}
-.nav-btn:hover:not(:disabled) {
-    background: #666;
-}
-.nav-btn:disabled {
-    background: #333;
-    color: #666;
-    cursor: not-allowed;
-}
-.nav-btn.confirm {
-    background: #4CAF50;
-}
-.nav-btn.confirm:hover {
-    background: #45a049;
-}
-</style>

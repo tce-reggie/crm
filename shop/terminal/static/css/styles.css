@@ -37,6 +37,16 @@ body {
     top: 0;
     left: 0;
     z-index: 1000;
+    color: #fff;
+}
+
+#screensaver div:first-child {
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.6; }
 }
 
 /* =========================
@@ -52,14 +62,18 @@ body {
     flex: 1;
     display: none;
     flex-direction: column;
+    background: #1a1a1a;
 }
 
 .step-header {
     text-align: center;
     font-size: 2.5em;
     padding: 30px;
-    background: #333;
-    border-bottom: 3px solid #555;
+    background: #222;
+    border-bottom: 3px solid #333;
+    color: #fff;
+    text-transform: uppercase;
+    letter-spacing: 2px;
 }
 
 /* =========================
@@ -69,30 +83,35 @@ body {
     display: flex;
     justify-content: space-between;
     padding: 25px 30px;
-    background: #333;
-    border-top: 3px solid #555;
+    background: #222;
+    border-top: 3px solid #333;
 }
 
 .nav-btn {
     padding: 20px 40px;
     font-size: 1.5em;
-    background: #555;
+    background: #444;
     color: #fff;
     border: none;
     border-radius: 15px;
     cursor: pointer;
     min-width: 150px;
-    transition: background 0.3s ease;
+    transition: all 0.3s ease;
+    font-weight: bold;
+    text-transform: uppercase;
 }
 
 .nav-btn:hover:not(:disabled) {
-    background: #666;
+    background: #555;
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(0,0,0,0.3);
 }
 
 .nav-btn:disabled {
     background: #333;
     color: #666;
     cursor: not-allowed;
+    opacity: 0.5;
 }
 
 .nav-btn.confirm {
@@ -104,19 +123,52 @@ body {
 }
 
 /* =========================
+   ОБЩИЕ СТИЛИ ДЛЯ ВСЕХ ШАГОВ
+   ========================= */
+.loading-message,
+.error-message,
+.no-products-message,
+.no-colors-message,
+.no-sizes-message,
+.no-prints-message,
+.no-areas-message {
+    grid-column: 1 / -1;
+    text-align: center;
+    padding: 40px;
+    font-size: 1.2em;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+}
+
+.loading-message {
+    color: #888;
+    font-style: italic;
+}
+
+.error-message {
+    color: #ff6b6b;
+    background: rgba(255, 107, 107, 0.1);
+    border-radius: 10px;
+    margin: 20px;
+}
+
+/* =========================
    ШАГ 1: ВЫБОР ИЗДЕЛИЯ
    ========================= */
 .products-grid {
     flex: 1;
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-    gap: 20px;
-    padding: 40px 20px;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 25px;
+    padding: 40px;
     overflow-y: auto;
+    align-content: start;
 }
 
 .product-card {
-    background: #444;
+    background: #333;
     border-radius: 25px;
     display: flex;
     flex-direction: column;
@@ -127,30 +179,52 @@ body {
     text-align: center;
     transition: all 0.3s ease;
     border: 3px solid transparent;
-    min-height: 250px;
+    min-height: 280px;
     cursor: pointer;
+    position: relative;
+    overflow: hidden;
+}
+
+.product-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 5px;
+    background: linear-gradient(90deg, transparent, #4CAF50, transparent);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.product-card:hover::before {
+    opacity: 1;
 }
 
 .product-card.selected {
     border-color: #4CAF50;
-    background: #555;
+    background: #3a3a3a;
     transform: scale(1.02);
+    box-shadow: 0 10px 30px rgba(76, 175, 80, 0.3);
 }
 
 .product-card:hover {
-    background: #555;
+    background: #3a3a3a;
+    transform: translateY(-5px);
+    box-shadow: 0 10px 20px rgba(0,0,0,0.3);
 }
 
 .product-image {
-    width: 150px;
-    height: 150px;
-    background: #555;
+    width: 180px;
+    height: 180px;
+    background: #444;
     display: flex;
     align-items: center;
     justify-content: center;
-    border-radius: 15px;
-    margin-bottom: 15px;
-    font-size: 0.6em;
+    border-radius: 20px;
+    margin-bottom: 20px;
+    overflow: hidden;
+    position: relative;
 }
 
 .product-image img {
@@ -158,93 +232,123 @@ body {
     height: 100%;
     object-fit: contain;
     border-radius: 15px;
+    transition: transform 0.3s ease;
+}
+
+.product-card:hover .product-image img {
+    transform: scale(1.05);
 }
 
 .product-title {
     font-weight: bold;
-    margin-bottom: 5px;
+    margin-bottom: 10px;
+    color: #fff;
 }
 
 .product-description {
-    font-size: 0.6em;
-    margin-top: 8px;
+    font-size: 0.7em;
+    margin-top: 10px;
     opacity: 0.8;
+    color: #aaa;
 }
 
 /* =========================
-   ШАГ 2: ВЫБОР МОДЕЛИ
+   ШАГ 2: ВЫБОР ЦВЕТА
    ========================= */
 .models-grid {
     flex: 1;
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-    gap: 20px;
-    padding: 40px 20px;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 25px;
+    padding: 40px;
     overflow-y: auto;
+    align-content: start;
 }
 
-.model-card {
-    background: #444;
-    border-radius: 25px;
+.color-card {
+    background: #333;
+    border-radius: 20px;
     display: flex;
     flex-direction: column;
-    justify-content: center;
     align-items: center;
     padding: 25px 15px;
-    font-size: 1.6em;
-    text-align: center;
+    cursor: pointer;
     transition: all 0.3s ease;
     border: 3px solid transparent;
-    min-height: 220px;
-    cursor: pointer;
-}
-
-.model-card.selected {
-    border-color: #4CAF50;
-    background: #555;
-    transform: scale(1.02);
-}
-
-.model-card:hover {
-    background: #555;
-}
-
-.model-image {
-    width: 120px;
-    height: 120px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: 15px;
-    margin-bottom: 15px;
+    min-height: 200px;
+    position: relative;
     overflow: hidden;
 }
 
-.model-image img {
-    width: 100%;
-    height: 100%;
-    object-fit: contain;
+.color-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 5px;
+    background: linear-gradient(90deg, transparent, #4CAF50, transparent);
+    opacity: 0;
+    transition: opacity 0.3s ease;
 }
 
-.model-image-placeholder {
-    width: 100%;
-    height: 100%;
-    background: #555;
+.color-card:hover::before {
+    opacity: 1;
+}
+
+.color-card:hover {
+    background: #3a3a3a;
+    transform: translateY(-5px);
+    box-shadow: 0 10px 20px rgba(0,0,0,0.3);
+}
+
+.color-card.selected {
+    border-color: #4CAF50;
+    background: #3a3a3a;
+    transform: scale(1.05);
+    box-shadow: 0 10px 30px rgba(76, 175, 80, 0.3);
+}
+
+.color-image {
+    width: 140px;
+    height: 140px;
+    border-radius: 15px;
+    overflow: hidden;
+    margin-bottom: 15px;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 0.7em;
+    background: #222;
+    border: 2px solid #444;
 }
 
-.model-title {
+.color-image img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    border-radius: 10px;
+}
+
+.color-image-placeholder {
+    width: 140px;
+    height: 140px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #444;
+    border-radius: 15px;
+    margin-bottom: 15px;
+    font-size: 1.1em;
+    color: #fff;
+    border: 2px solid #555;
+}
+
+.color-name {
     font-weight: bold;
-    margin-bottom: 5px;
-}
-
-.model-description {
-    font-size: 0.6em;
-    margin-top: 8px;
-    opacity: 0.8;
+    font-size: 1.2em;
+    text-align: center;
+    color: #fff;
+    margin-top: 5px;
 }
 
 /* =========================
@@ -253,337 +357,547 @@ body {
 .sizes-grid {
     flex: 1;
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: 15px;
-    padding: 40px 20px;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 25px;
+    padding: 40px;
     overflow-y: auto;
+    align-content: start;
 }
 
 .size-card {
-    background: #444;
+    background: #333;
     border-radius: 20px;
     display: flex;
     flex-direction: column;
     justify-content: center;
     align-items: center;
-    padding: 20px 15px;
+    padding: 25px 20px;
     font-size: 1.4em;
     text-align: center;
     transition: all 0.3s ease;
     border: 3px solid transparent;
-    min-height: 180px;
+    min-height: 200px;
     cursor: pointer;
+    position: relative;
+    overflow: hidden;
+}
+
+.size-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 5px;
+    background: linear-gradient(90deg, transparent, #4CAF50, transparent);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.size-card:hover::before {
+    opacity: 1;
 }
 
 .size-card.selected {
     border-color: #4CAF50;
-    background: #555;
-    transform: scale(1.02);
+    background: #3a3a3a;
+    transform: scale(1.05);
+    box-shadow: 0 10px 30px rgba(76, 175, 80, 0.3);
 }
 
 .size-card:hover {
-    background: #555;
+    background: #3a3a3a;
+    transform: translateY(-5px);
+    box-shadow: 0 10px 20px rgba(0,0,0,0.3);
+}
+
+.size-card[style*="opacity: 0.5"] {
+    cursor: not-allowed;
+}
+
+.size-card[style*="opacity: 0.5"]:hover {
+    transform: none;
+    box-shadow: none;
 }
 
 .size-badge {
-    font-size: 2.5em;
+    font-size: 2.8em;
     font-weight: bold;
-    margin-bottom: 10px;
+    margin-bottom: 15px;
     color: #4CAF50;
+    text-shadow: 0 2px 10px rgba(76, 175, 80, 0.3);
+}
+
+.size-image {
+    width: 140px;
+    height: 140px;
+    border-radius: 15px;
+    overflow: hidden;
+    margin-bottom: 15px;
+    background: #222;
+    border: 2px solid #444;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.size-image img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    border-radius: 10px;
 }
 
 .size-title {
     font-weight: bold;
-    margin-bottom: 5px;
-    font-size: 0.9em;
+    margin-bottom: 8px;
+    font-size: 1.1em;
+    color: #fff;
 }
 
 .size-stock {
-    font-size: 0.6em;
-    margin-top: 3px;
-}
-
-.loading-message,
-.error-message,
-.no-sizes-message {
-    grid-column: 1 / -1;
-    text-align: center;
-    font-size: 1.5em;
-    padding: 50px;
-}
-
-.loading-message {
-    color: #888;
-}
-
-.error-message {
-    color: #ff4444;
-    background: #333;
-    border-radius: 15px;
-}
-
-.no-sizes-message {
-    color: #888;
-    background: #333;
-    border-radius: 15px;
+    font-size: 0.8em;
+    margin-top: 5px;
+    padding: 5px 10px;
+    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.1);
 }
 
 /* =========================
-   ШАГ 4: ПРИНТЫ И ЗОНЫ
+   ШАГ 4: ПРИНТЫ И ЗОНЫ ПЕЧАТИ
    ========================= */
 .print-step {
     flex: 1;
     display: flex;
-    padding: 20px;
-    gap: 20px;
+    padding: 30px;
+    gap: 30px;
+    height: calc(100vh - 200px);
+    min-height: 600px;
 }
 
-/* Левая часть */
+/* Левая часть: Превью товара и зоны печати */
 .product-preview {
     flex: 1;
     display: flex;
     flex-direction: column;
-    gap: 15px;
+    gap: 25px;
+    min-width: 500px;
 }
 
 .print-areas-tabs {
     display: flex;
     flex-wrap: wrap;
-    gap: 10px;
+    gap: 15px;
+    padding: 20px;
+    background: #222;
+    border-radius: 15px;
+    border: 2px solid #333;
 }
 
 .area-tab {
-    padding: 10px 15px;
-    background: #333;
-    border: 1px solid #555;
-    border-radius: 8px;
+    padding: 15px 25px;
+    background: #444;
+    border: 2px solid #555;
+    border-radius: 10px;
     color: #fff;
     cursor: pointer;
-    font-size: 0.9em;
+    font-size: 1.2em;
+    font-weight: bold;
+    transition: all 0.3s ease;
+    min-width: 120px;
+    text-align: center;
+}
+
+.area-tab:hover {
+    background: #555;
+    border-color: #666;
+    transform: translateY(-2px);
 }
 
 .area-tab.active {
     background: #4CAF50;
     border-color: #4CAF50;
+    color: white;
+    box-shadow: 0 5px 15px rgba(76, 175, 80, 0.4);
 }
 
 .product-side-wrapper {
     flex: 1;
+    background: #222;
+    border-radius: 20px;
+    padding: 25px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    position: relative;
+    overflow: hidden;
+    border: 3px solid #333;
+}
+
+.product-side {
+    position: relative;
+    width: 100%;
+    height: 100%;
     display: flex;
     justify-content: center;
     align-items: center;
 }
 
-.product-side {
-    position: relative;
-    background: #222;
+#productSideImageContainer {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background: #111;
     border-radius: 15px;
-    padding: 10px;
-    display: inline-block;
+    overflow: hidden;
 }
 
-#productSideImage {
-    display: block;
-    max-width: 400px;
-    max-height: 400px;
+#productSideImageContainer img {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
     border-radius: 10px;
 }
 
-/* Область печати поверх картинки */
+/* Область печати */
 .print-area {
     position: absolute;
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
-    border: 2px dashed rgba(255, 255, 255, 0.5);
-    border-radius: 8px;
-    overflow: hidden;
+    border: 3px dashed rgba(76, 175, 80, 0.7);
+    background: rgba(76, 175, 80, 0.1);
+    border-radius: 15px;
+    overflow: visible;
+    z-index: 10;
 }
 
 .print-area-hint {
     position: absolute;
-    inset: 0;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    text-align: center;
+    color: rgba(255, 255, 255, 0.7);
+    font-size: 1.3em;
+    line-height: 1.5;
+    pointer-events: none;
+    padding: 20px;
+    background: rgba(0, 0, 0, 0.5);
+    border-radius: 10px;
+    backdrop-filter: blur(5px);
+}
+
+/* Объекты принтов внутри области */
+.print-object {
+    position: absolute;
+    border: 2px solid #4CAF50;
+    background: rgba(76, 175, 80, 0.2);
+    cursor: move;
     display: flex;
-    flex-direction: column;
     align-items: center;
     justify-content: center;
-    color: #666;
-    font-size: 1.2em;
-    text-align: center;
+    overflow: hidden;
+    box-sizing: border-box;
+    z-index: 20;
+    border-radius: 5px;
+    transition: border-color 0.3s ease;
+}
+
+.print-object:hover {
+    border-color: #fff;
+    background: rgba(76, 175, 80, 0.3);
+}
+
+.print-object img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
     pointer-events: none;
 }
 
-/* Прямоугольники принтов */
-.print-object {
-    /* позиционирование и размеры ставятся из JS */
-}
-
-/* Правая часть */
+/* Правая часть: Принты и информация */
 .print-info {
     flex: 1;
     display: flex;
     flex-direction: column;
-    gap: 15px;
+    gap: 25px;
+    min-width: 400px;
+    max-width: 500px;
 }
 
 .product-details {
-    background: #333;
-    border-radius: 10px;
-    padding: 15px 20px;
-    font-size: 1em;
+    background: #222;
+    border-radius: 15px;
+    padding: 25px;
+    font-size: 1.1em;
+    border: 3px solid #333;
 }
 
+.product-details h3 {
+    margin-top: 0;
+    margin-bottom: 20px;
+    color: #4CAF50;
+    font-size: 1.4em;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.product-details p {
+    margin: 12px 0;
+    color: #ddd;
+    font-size: 1.1em;
+}
+
+#currentAreaInfo {
+    color: #4CAF50;
+    font-weight: bold;
+    font-size: 1.2em;
+    padding: 10px;
+    background: rgba(76, 175, 80, 0.1);
+    border-radius: 8px;
+    border-left: 4px solid #4CAF50;
+}
+
+/* Галерея принтов */
 .prints-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-    gap: 15px;
-    padding: 10px;
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: 20px;
+    padding: 20px;
+    background: #222;
+    border-radius: 15px;
     overflow-y: auto;
-    max-height: 320px;
+    max-height: 350px;
+    border: 3px solid #333;
 }
 
 .print-card {
-    background: #555;
-    border-radius: 15px;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    padding: 15px 10px;
+    background: #333;
+    border-radius: 12px;
+    padding: 20px 15px;
     text-align: center;
     transition: all 0.3s ease;
     border: 2px solid transparent;
     cursor: pointer;
-    min-height: 120px;
+    min-height: 140px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    position: relative;
+    overflow: hidden;
+}
+
+.print-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 5px;
+    background: linear-gradient(90deg, transparent, #4CAF50, transparent);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.print-card:hover::before {
+    opacity: 1;
 }
 
 .print-card:hover {
-    background: #666;
-}
-
-.print-card.selected {
+    background: #3a3a3a;
     border-color: #4CAF50;
-    background: #666;
-    transform: scale(1.05);
+    transform: translateY(-5px) scale(1.05);
+    box-shadow: 0 10px 25px rgba(0,0,0,0.4);
 }
 
 .print-icon {
-    font-size: 2em;
-    margin-bottom: 8px;
+    width: 100px;
+    height: 100px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 15px;
+    background: #222;
+    border-radius: 10px;
+    overflow: hidden;
+    border: 2px solid #444;
 }
 
 .print-icon img {
-    max-width: 64px;
-    max-height: 64px;
+    max-width: 100%;
+    max-height: 100%;
     object-fit: contain;
+    border-radius: 8px;
 }
 
 .print-name {
-    font-size: 0.8em;
-    font-weight: bold;
-}
-
-.no-prints-message {
-    grid-column: 1 / -1;
-    text-align: center;
-    font-size: 1.2em;
-    padding: 30px;
-    color: #888;
-}
-
-/* Свой текст */
-.custom-controls {
-    margin-top: 10px;
-    padding: 15px;
-    background: #333;
-    border-radius: 10px;
-}
-
-.custom-controls input,
-.custom-controls select {
-    width: 100%;
-    padding: 12px;
-    margin: 8px 0;
-    background: #444;
-    color: #fff;
-    border: 1px solid #555;
-    border-radius: 5px;
     font-size: 1em;
-}
-
-.custom-controls button {
-    padding: 10px;
-    margin-top: 10px;
-    width: 100%;
-    background: #4CAF50;
+    font-weight: bold;
     color: #fff;
-    border: none;
-    border-radius: 5px;
-    cursor: pointer;
+    word-break: break-word;
+    line-height: 1.3;
 }
 
-/* Список принтов по зоне */
+/* Список текущих принтов */
 .current-prints-summary {
-    background: #333;
-    border-radius: 10px;
-    padding: 15px 20px;
-    font-size: 0.95em;
+    background: #222;
+    border-radius: 15px;
+    padding: 25px;
+    border: 3px solid #333;
+    overflow-y: auto;
+    max-height: 250px;
 }
 
 .current-prints-summary h3 {
-    margin-bottom: 10px;
+    margin-top: 0;
+    margin-bottom: 20px;
+    color: #4CAF50;
+    font-size: 1.4em;
+    text-transform: uppercase;
+    letter-spacing: 1px;
 }
 
 .current-prints-summary ul {
     list-style: none;
+    padding: 0;
+    margin: 0;
 }
 
 .current-prints-summary li {
-    margin: 4px 0;
-    font-size: 0.9em;
+    padding: 12px 15px;
+    margin-bottom: 10px;
+    background: #333;
+    border-radius: 8px;
+    color: #ddd;
+    font-size: 1em;
+    border-left: 4px solid #4CAF50;
+    transition: background 0.3s ease;
+}
+
+.current-prints-summary li:hover {
+    background: #3a3a3a;
+}
+
+/* Сообщения о загрузке */
+.loading-message-small {
+    padding: 40px;
+    text-align: center;
+    color: #888;
+    font-style: italic;
+    font-size: 1.2em;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    width: 100%;
+}
+
+.no-image-message {
+    padding: 40px;
+    text-align: center;
+    color: #666;
+    font-style: italic;
+    font-size: 1.1em;
 }
 
 /* =========================
-   ШАГ 5: ПОДТВЕРЖДЕНИЕ
+   ШАГ 5: ПОДТВЕРЖДЕНИЕ ЗАКАЗА
    ========================= */
 .confirmation-step {
     padding: 40px;
     display: flex;
     flex-direction: column;
     height: calc(100vh - 180px);
-    gap: 20px;
+    gap: 30px;
 }
 
 .customer-input {
-    margin-bottom: 10px;
+    margin-bottom: 20px;
 }
 
 .customer-input input {
     width: 100%;
-    padding: 20px;
-    margin: 10px 0;
-    background: #333;
+    padding: 25px;
+    margin: 15px 0;
+    background: #222;
     color: #fff;
-    border: 2px solid #555;
-    border-radius: 10px;
-    font-size: 1.3em;
+    border: 3px solid #333;
+    border-radius: 15px;
+    font-size: 1.5em;
+    transition: all 0.3s ease;
+}
+
+.customer-input input:focus {
+    outline: none;
+    border-color: #4CAF50;
+    box-shadow: 0 0 20px rgba(76, 175, 80, 0.3);
+}
+
+.customer-input input::placeholder {
+    color: #888;
+    opacity: 0.7;
 }
 
 .order-summary {
-    background: #333;
-    padding: 30px;
-    border-radius: 15px;
+    background: #222;
+    padding: 35px;
+    border-radius: 20px;
     flex: 1;
-    font-size: 1.1em;
+    font-size: 1.3em;
+    border: 3px solid #333;
+    overflow-y: auto;
 }
 
 .order-summary h3 {
-    margin-bottom: 20px;
-    font-size: 1.5em;
+    margin-bottom: 30px;
+    font-size: 1.8em;
+    color: #4CAF50;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    text-align: center;
 }
 
 .order-summary p {
-    margin: 8px 0;
+    margin: 15px 0;
+    padding: 15px 20px;
+    background: #333;
+    border-radius: 10px;
+    border-left: 4px solid #4CAF50;
+    transition: background 0.3s ease;
+}
+
+.order-summary p:hover {
+    background: #3a3a3a;
+}
+
+.order-summary strong {
+    color: #4CAF50;
+    min-width: 200px;
+    display: inline-block;
+}
+
+#confirmOrderBtn {
+    padding: 25px 50px;
+    font-size: 1.8em;
+    background: #4CAF50;
+    color: white;
+    border: none;
+    border-radius: 15px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-weight: bold;
+    text-transform: uppercase;
+    margin-top: 20px;
+}
+
+#confirmOrderBtn:hover {
+    background: #45a049;
+    transform: translateY(-3px);
+    box-shadow: 0 10px 30px rgba(76, 175, 80, 0.4);
 }
 
 /* =========================
@@ -595,7 +909,7 @@ body {
     left: 0;
     width: 100%;
     height: 100%;
-    background: rgba(0, 0, 0, 0.9);
+    background: rgba(0, 0, 0, 0.95);
     display: none;
     justify-content: center;
     align-items: center;
@@ -605,19 +919,126 @@ body {
 }
 
 .success-message {
-    font-size: 2em;
-    margin-bottom: 30px;
+    font-size: 3em;
+    margin-bottom: 40px;
+    color: #4CAF50;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    animation: pulse 2s infinite;
 }
 
 .order-number {
-    font-size: 5em;
+    font-size: 6em;
     color: #4CAF50;
-    margin: 30px 0;
+    margin: 40px 0;
     font-weight: bold;
+    text-shadow: 0 5px 20px rgba(76, 175, 80, 0.5);
+    animation: glow 2s infinite alternate;
+}
+
+@keyframes glow {
+    from { text-shadow: 0 5px 20px rgba(76, 175, 80, 0.5); }
+    to { text-shadow: 0 5px 30px rgba(76, 175, 80, 0.8), 0 0 20px rgba(76, 175, 80, 0.6); }
 }
 
 .success-note {
-    font-size: 1.5em;
+    font-size: 1.8em;
     opacity: 0.8;
-    margin-bottom: 20px;
+    margin-bottom: 40px;
+    color: #ddd;
+}
+
+/* =========================
+   ПРОКРУТКА
+   ========================= */
+::-webkit-scrollbar {
+    width: 12px;
+}
+
+::-webkit-scrollbar-track {
+    background: #222;
+    border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #444;
+    border-radius: 10px;
+    border: 3px solid #222;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #555;
+}
+
+/* =========================
+   АДАПТИВНОСТЬ
+   ========================= */
+@media (max-width: 1200px) {
+    .print-step {
+        flex-direction: column;
+        height: auto;
+    }
+
+    .product-preview,
+    .print-info {
+        min-width: 100%;
+        max-width: 100%;
+    }
+
+    .prints-grid {
+        max-height: 250px;
+    }
+
+    .current-prints-summary {
+        max-height: 200px;
+    }
+}
+
+@media (max-width: 768px) {
+    .step-header {
+        font-size: 2em;
+        padding: 20px;
+    }
+
+    .products-grid,
+    .models-grid,
+    .sizes-grid {
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        padding: 20px;
+        gap: 15px;
+    }
+
+    .nav-btn {
+        padding: 15px 30px;
+        font-size: 1.2em;
+        min-width: 120px;
+    }
+
+    .success-message {
+        font-size: 2em;
+    }
+
+    .order-number {
+        font-size: 4em;
+    }
+}
+
+@media (max-width: 480px) {
+    .products-grid,
+    .models-grid,
+    .sizes-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .product-card,
+    .color-card,
+    .size-card {
+        min-height: 150px;
+    }
+
+    .nav-btn {
+        padding: 12px 20px;
+        font-size: 1em;
+        min-width: 100px;
+    }
 }

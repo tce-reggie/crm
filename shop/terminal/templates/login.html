@@ -35,6 +35,11 @@
             border: 2px solid #ddd;
             border-radius: 5px;
             font-size: 16px;
+            transition: border-color 0.3s;
+        }
+        .form-input:focus {
+            border-color: #667eea;
+            outline: none;
         }
         .login-btn {
             width: 100%;
@@ -46,22 +51,37 @@
             font-size: 16px;
             cursor: pointer;
             margin-top: 20px;
+            transition: background 0.3s;
+        }
+        .login-btn:hover {
+            background: #5a6fd8;
         }
         .error-message {
             color: #e74c3c;
             text-align: center;
             margin-top: 10px;
+            padding: 10px;
+            background: #ffeaea;
+            border-radius: 5px;
+            border: 1px solid #e74c3c;
+        }
+        .system-info {
+            text-align: center;
+            margin-top: 20px;
+            color: #666;
+            font-size: 14px;
         }
     </style>
 </head>
 <body>
     <div class="login-container">
-        <h1 class="login-title">Авторизация</h1>
+        <h1 class="login-title">АВТОРИЗАЦИЯ</h1>
 
         <form method="post">
             {% csrf_token %}
 
-            <input type="text" name="login" class="form-input" placeholder="Логин" required>
+            <!-- Исправляем name="login" на name="username" для совместимости с views -->
+            <input type="text" name="username" class="form-input" placeholder="Логин" required autofocus>
             <input type="password" name="password" class="form-input" placeholder="Пароль" required>
 
             {% if messages %}
@@ -70,8 +90,29 @@
                 {% endfor %}
             {% endif %}
 
-            <button type="submit" class="login-btn">Войти</button>
+            <button type="submit" class="login-btn">ВОЙТИ В СИСТЕМУ</button>
         </form>
+
+        <div class="system-info">
+            Система управления заказами
+        </div>
     </div>
+
+    <script>
+        // Автофокус на поле логина
+        document.addEventListener('DOMContentLoaded', function() {
+            document.querySelector('input[name="username"]').focus();
+        });
+
+        // Очистка ошибок при начале ввода
+        document.querySelectorAll('.form-input').forEach(input => {
+            input.addEventListener('input', function() {
+                const errorMessage = document.querySelector('.error-message');
+                if (errorMessage) {
+                    errorMessage.remove();
+                }
+            });
+        });
+    </script>
 </body>
 </html>

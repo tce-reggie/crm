@@ -1,3 +1,4 @@
+import os
 from django.db import models
 
 
@@ -16,14 +17,26 @@ class User(models.Model):
         verbose_name='Логин'
     )
     password = models.CharField(
-        max_length=50,
+        max_length=128,  # Увеличим для хэширования паролей
         verbose_name='Пароль'
+    )
+    employee_name = models.CharField(
+        max_length=100,
+        verbose_name='Имя сотрудника',
+        help_text='ФИО сотрудника'
     )
     interface = models.CharField(
         max_length=20,
         choices=INTERFACE_CHOICES,
-        default='terminal',
         verbose_name='Интерфейс'
+    )
+    is_active = models.BooleanField(
+        default=True,
+        verbose_name='Активный'
+    )
+    created_at = models.DateTimeField(
+        auto_now_add=True,
+        verbose_name='Дата создания'
     )
 
     class Meta:
@@ -31,15 +44,25 @@ class User(models.Model):
         verbose_name_plural = 'Пользователи'
 
     def __str__(self):
-        return f"{self.login} ({self.interface})"
+        return f"{self.employee_name} ({self.login}) - {self.get_interface_display()}"
 
     def get_interface_url(self):
         """Возвращает URL интерфейса"""
-        return f"{self.interface}_interface"
+        interface_urls = {
+            'terminal': 'terminal_interface',
+            'reception': 'reception_interface',
+            'production': 'production_interface',
+            'admin': 'admin_interface',
+        }
+        return interface_urls.get(self.interface, 'login')
+
+    def set_password(self, raw_password):
+        """Установка пароля (можно добавить хэширование)"""
+        self.password = make_password(raw_password)
 
     def check_password(self, raw_password):
-        """Простая проверка пароля"""
-        return self.password == raw_password
+        """Проверка пароля"""
+        return check_password(raw_password, self.password)
 
 # Таблица 2 - Промокоды
 class PromoCode(models.Model):
@@ -52,13 +75,25 @@ class PromoCode(models.Model):
 
 
 # Таблица 3 - Склад вещей предприятия
+# функция для добавления изображения в media
+def product_image_directory_path(instance, filename):
+    extension = filename.split('.')[-1]
+    new_filename = f"{instance.model}_{instance.color}_{instance.size}.{extension}"
+    #путь относительно MEDIA_ROOT: products/Футболка_Белый_XL.jpg
+    return os.path.join('products', new_filename)
+
 class Product(models.Model):
     product_id = models.AutoField(primary_key=True, verbose_name='ID Продукта')
     model = models.CharField(max_length=100, verbose_name='Модель')
+    image_filename = models.ImageField(
+        max_length=255,
+        blank=True,  # Разрешить пустое значение в формах
+        null=True,  # Разрешить NULL в базе данных
+        verbose_name='Имя файла картинки'
+    )
     size = models.CharField(max_length=20, verbose_name='Размер')
     color = models.CharField(max_length=50, verbose_name='Цвет')
     quantity = models.IntegerField(default=0, verbose_name='Количество')
-    price = models.DecimalField(max_digits=10, decimal_places=2, verbose_name='Цена')
 
     class Meta:
         unique_together = ['model', 'size', 'color']
@@ -67,11 +102,26 @@ class Product(models.Model):
         return f"{self.model} {self.color} {self.size}"
 
 
+def area_image_directory_path(instance, filename):
+    extension = filename.split('.')[-1]
+    model = instance.product.model.replace(" ", "_")
+    color = instance.product.color.replace(" ", "_")
+    size = instance.product.size.replace(" ", "_")
+    area = instance.area_name.replace(" ", "_")
+    new_filename = f"{model}_{color}_{size}_{area}.{extension}"
+    return os.path.join('products', 'areas', new_filename)
+
 # Таблица 4 - Зоны печати для товаров
 class ProductPrintArea(models.Model):
     area_id = models.AutoField(primary_key=True, verbose_name='AreaID')
     product = models.ForeignKey(Product, on_delete=models.CASCADE, verbose_name='Продукт')
     area_name = models.CharField(max_length=100, verbose_name='Название зоны')
+    area_image = models.ImageField(
+        upload_to=area_image_directory_path,
+        verbose_name='Изображение зоны',
+        null=True,
+        blank=True,
+    )
     max_prints = models.IntegerField(default=1, verbose_name='Макс. принтов')
     width = models.DecimalField(max_digits=6, decimal_places=2, verbose_name='Ширина (см)')
     height = models.DecimalField(max_digits=6, decimal_places=2, verbose_name='Высота (см)')
@@ -80,12 +130,21 @@ class ProductPrintArea(models.Model):
         return f"{self.product.model} - {self.area_name}"
 
 
+def print_design_directory_path(instance, filename):
+    extension = filename.split('.')[-1]
+    safe_name = instance.name.replace(" ", "_")
+    new_filename = f"{safe_name}.{extension}"
+    return os.path.join('prints', new_filename)
+
 # Таблица 5 - Склад Принтов
 class PrintDesign(models.Model):
     print_id = models.AutoField(primary_key=True, verbose_name='Print ID')
     name = models.CharField(max_length=100, verbose_name='Название')
-    file_path = models.FileField(upload_to='prints/', verbose_name='Файл')
-    price = models.DecimalField(max_digits=8, decimal_places=2, verbose_name='Цена')
+    file_path = models.ImageField(
+        upload_to=print_design_directory_path,  # Используем нашу функцию
+        verbose_name='Файл',
+        max_length=255
+    )
 
     def __str__(self):
         return self.name

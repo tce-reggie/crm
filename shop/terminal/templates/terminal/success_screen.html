@@ -1,34 +1,13 @@
 <div id="successScreen">
     <div class="success-message">Заказ успешно оформлен!</div>
+
     <div class="order-number" id="orderNumberDisplay">000000</div>
-    <div style="font-size: 1.5em; opacity: 0.8;">Сфотографируйте номер заказа</div>
 
-    <button class="nav-btn confirm" onclick="resetTerminal()" style="margin-top: 20px;">НОВЫЙ ЗАКАЗ</button>
+    <div class="success-note">
+        Сфотографируйте номер заказа
+    </div>
+
+    <button class="nav-btn confirm" onclick="resetTerminal()">
+        НОВЫЙ ЗАКАЗ
+    </button>
 </div>
-
-<style>
-#successScreen {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(0, 0, 0, 0.9);
-    display: none;
-    justify-content: center;
-    align-items: center;
-    z-index: 2000;
-    flex-direction: column;
-    text-align: center;
-}
-.order-number {
-    font-size: 5em;
-    color: #4CAF50;
-    margin: 30px 0;
-    font-weight: bold;
-}
-.success-message {
-    font-size: 2em;
-    margin-bottom: 50px;
-}
-</style>
