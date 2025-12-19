@@ -439,8 +439,65 @@ function selectSize(id, sizeLabel, productId) {
 // =======================
 // ШАГ 4: ЗОНЫ ПЕЧАТИ И ПРИНТЫ
 // =======================
+//function switchArea(areaId, config) {
+//    console.log('switchArea вызвана для зоны:', areaId);
+//
+//    currentAreaId = areaId;
+//    currentAreaConfig = config;
+//
+//    // Активируем вкладку
+//    document.querySelectorAll('.area-tab').forEach(btn => {
+//        btn.classList.toggle('active', btn.dataset.areaId === areaId.toString());
+//    });
+//
+//    // Обновляем информацию
+//    const infoEl = document.getElementById('currentAreaInfo');
+//    if (infoEl) {
+//        const areaName = document.querySelector(`.area-tab[data-area-id="${areaId}"]`)?.textContent || 'Неизвестно';
+//        infoEl.textContent = `Зона: ${areaName} | Максимум принтов: ${config.maxPrints}`;
+//    }
+//
+//    // Показываем изображение зоны
+//    const imageContainer = document.getElementById('productSideImageContainer');
+//    if (imageContainer) {
+//        if (config.imageUrl) {
+//            imageContainer.innerHTML = `<img src="${config.imageUrl}" alt="Зона печати">`;
+//        } else {
+//            imageContainer.innerHTML = '<div class="no-image-message">Нет изображения зоны печати</div>';
+//        }
+//    }
+//
+//    // Настраиваем область печати
+//    const printArea = document.getElementById('printArea');
+//    if (printArea) {
+//        console.log('Настраиваем область печати:', config.width, 'x', config.height);
+//
+//        if (config.width && config.height) {
+//            const scale = 5; // Уменьшаем масштаб для видимости
+//            printArea.style.width = (config.width * scale) + 'px';
+//            printArea.style.height = (config.height * scale) + 'px';
+//
+//            // Очищаем
+//            printArea.innerHTML = '';
+//
+//            if (!areaPrints[areaId] || areaPrints[areaId].length === 0) {
+//                const hint = document.createElement('div');
+//                hint.className = 'print-area-hint';
+//                hint.innerHTML = 'Выберите принт справа<br><span style="font-size:0.8em;">Перетащите его в область</span>';
+//                printArea.appendChild(hint);
+//            } else {
+//                renderAreaPrints();
+//            }
+//        }
+//    }
+//
+//    updateCurrentPrintsList();
+//}
+//новая реализация switcharea
 function switchArea(areaId, config) {
-    console.log('switchArea вызвана для зоны:', areaId);
+    console.log('=== switchArea ===');
+    console.log('Area ID:', areaId);
+    console.log('Полный config:', config);
 
     currentAreaId = areaId;
     currentAreaConfig = config;
@@ -461,34 +518,72 @@ function switchArea(areaId, config) {
     const imageContainer = document.getElementById('productSideImageContainer');
     if (imageContainer) {
         if (config.imageUrl) {
-            imageContainer.innerHTML = `<img src="${config.imageUrl}" alt="Зона печати">`;
+            imageContainer.innerHTML = `<img src="${config.imageUrl}" alt="Зона печати"
+                                            style="width: 100%; height: 100%; object-fit: contain;">`;
+            console.log('Изображение загружено:', config.imageUrl);
         } else {
             imageContainer.innerHTML = '<div class="no-image-message">Нет изображения зоны печати</div>';
+            console.log('Нет изображения для зоны');
         }
+    } else {
+        console.error('Контейнер productSideImageContainer не найден!');
     }
 
     // Настраиваем область печати
     const printArea = document.getElementById('printArea');
     if (printArea) {
         console.log('Настраиваем область печати:', config.width, 'x', config.height);
+        console.log('Offset X:', config.offsetX, 'Offset Y:', config.offsetY);
 
         if (config.width && config.height) {
-            const scale = 5; // Уменьшаем масштаб для видимости
-            printArea.style.width = (config.width * scale) + 'px';
-            printArea.style.height = (config.height * scale) + 'px';
+            const scale = 8; // 1 см = 8 пикселей
 
-            // Очищаем
+            // Рассчитываем размеры области печати
+            const areaWidth = config.width * scale;
+            const areaHeight = config.height * scale;
+
+            // Устанавливаем размеры
+            printArea.style.width = areaWidth + 'px';
+            printArea.style.height = areaHeight + 'px';
+
+            // Получаем высоту контейнера изображения
+            const container = imageContainer || printArea.parentElement;
+            const containerHeight = container ? container.clientHeight : 0;
+
+            // Рассчитываем позицию:
+            // left = offset_x (просто отступ слева)
+            // top = (высота контейнера - высота области - offset_y)
+            let leftPos = (config.offsetX || 0);
+            let topPos = containerHeight - areaHeight - (config.offsetY || 0);
+
+            console.log('Container height:', containerHeight);
+            console.log('Area height:', areaHeight);
+            console.log('Offset Y:', config.offsetY || 0);
+            console.log('Calculated top position:', topPos);
+
+            // Устанавливаем позицию
+            printArea.style.position = 'absolute';
+            printArea.style.left = leftPos + 'px';
+            printArea.style.top = topPos + 'px';
+            printArea.style.zIndex = '20'; // Делаем поверх изображения
+
+            // Очищаем предыдущие принты
             printArea.innerHTML = '';
-
             if (!areaPrints[areaId] || areaPrints[areaId].length === 0) {
                 const hint = document.createElement('div');
                 hint.className = 'print-area-hint';
                 hint.innerHTML = 'Выберите принт справа<br><span style="font-size:0.8em;">Перетащите его в область</span>';
                 printArea.appendChild(hint);
             } else {
+                // Отображаем принты для этой зоны
                 renderAreaPrints();
             }
+        } else {
+            printArea.style.display = 'none';
+            console.warn('Нет размеров для области печати');
         }
+    } else {
+        console.error('Область печати не найдена!');
     }
 
     updateCurrentPrintsList();
@@ -721,7 +816,9 @@ async function loadPrintAreas(productId) {
                     width: area.width,
                     height: area.height,
                     maxPrints: area.max_prints,
-                    imageUrl: area.image_url
+                    imageUrl: area.image_url,
+                    offsetX: area.offset_x || 0,
+                    offsetY: area.offset_y || 0
                 });
             };
 
@@ -734,7 +831,9 @@ async function loadPrintAreas(productId) {
                 width: areas[0].width,
                 height: areas[0].height,
                 maxPrints: areas[0].max_prints,
-                imageUrl: areas[0].image_url
+                imageUrl: areas[0].image_url,
+                offsetX: area.offset_x || 0,
+                offsetY: area.offset_y || 0
             });
         }
 

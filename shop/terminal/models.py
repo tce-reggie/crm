@@ -125,6 +125,8 @@ class ProductPrintArea(models.Model):
     max_prints = models.IntegerField(default=1, verbose_name='Макс. принтов')
     width = models.DecimalField(max_digits=6, decimal_places=2, verbose_name='Ширина (см)')
     height = models.DecimalField(max_digits=6, decimal_places=2, verbose_name='Высота (см)')
+    offset_x = models.IntegerField(default=0, verbose_name='Отступ по X (пикс)')
+    offset_y = models.IntegerField(default=0, verbose_name='Отступ по Y (пикс)')
 
     def __str__(self):
         return f"{self.product.model} - {self.area_name}"

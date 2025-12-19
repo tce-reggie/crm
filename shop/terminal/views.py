@@ -256,6 +256,8 @@ def api_print_areas(request):
                 'height': float(area.height),
                 'max_prints': area.max_prints,
                 'image_url': area.area_image.url if area.area_image else None,
+                'offset_x': area.offset_x,
+                'offset_y': area.offset_y,
             })
 
         print(f"DEBUG: Найдено {len(areas_data)} зон печати")
