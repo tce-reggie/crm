@@ -123,8 +123,8 @@ class ProductPrintArea(models.Model):
         blank=True,
     )
     max_prints = models.IntegerField(default=1, verbose_name='Макс. принтов')
-    width = models.DecimalField(max_digits=6, decimal_places=2, verbose_name='Ширина (см)')
-    height = models.DecimalField(max_digits=6, decimal_places=2, verbose_name='Высота (см)')
+    width = models.DecimalField(max_digits=6, decimal_places=2, verbose_name='Ширина (px)')
+    height = models.DecimalField(max_digits=6, decimal_places=2, verbose_name='Высота (px)')
     offset_x = models.IntegerField(default=0, verbose_name='Отступ по X (пикс)')
     offset_y = models.IntegerField(default=0, verbose_name='Отступ по Y (пикс)')
 
@@ -179,7 +179,7 @@ class Order(models.Model):
 class OrderPrint(models.Model):
     order_print_id = models.AutoField(primary_key=True, verbose_name='OrderPrintID')
     order = models.ForeignKey(Order, on_delete=models.CASCADE, verbose_name='Заказ')
-    print_design = models.ForeignKey(PrintDesign, on_delete=models.CASCADE, verbose_name='Принт')
+    print_design = models.TextField(verbose_name='Содержимое принта')
     area = models.ForeignKey(ProductPrintArea, on_delete=models.CASCADE, verbose_name='Зона печати')
     position_x = models.DecimalField(max_digits=6, decimal_places=2, verbose_name='Позиция X')
     position_y = models.DecimalField(max_digits=6, decimal_places=2, verbose_name='Позиция Y')

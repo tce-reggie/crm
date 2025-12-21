@@ -22,16 +22,16 @@
         <!-- ЛЕВАЯ ЧАСТЬ: ПРЕВЬЮ -->
         <div class="preview-section">
             <div class="preview-title">Превью зоны печати:</div>
-            <div class="preview-container" id="productSideImageContainer">
-                <div class="loading-message-small">Выберите сторону</div>
-            </div>
+            <div class="image-wrapper">
+                <div class="preview-container" id="productSideImageContainer">
+                    <div class="loading-message-small">Выберите сторону</div>
+                </div>
 
-            <div class="print-area-container">
-                <div class="print-area-title">Область для принтов:</div>
-                <div class="print-area" id="printArea">
-                    <div class="print-area-hint">
-                        Выберите принт справа<br>
-                        <span style="font-size:0.8em;">Перетащите его в область</span>
+                <div class="print-area-container">
+                    <div class="print-area" id="printArea">
+                        <div class="print-area-hint">
+                            Выберите принт<br>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -41,6 +41,7 @@
         <div class="prints-section">
             <div class="prints-title">Доступные принты:</div>
             <div class="prints-grid" id="printsGallery">
+
                 <div class="loading-message-small">Загрузка принтов...</div>
             </div>
 
@@ -49,6 +50,32 @@
                 <div class="current-prints-list" id="currentPrintsList">
                     <div class="empty-message">Принтов на этой зоне нет</div>
                 </div>
+                <div class="print-actions">
+                    <button class="btn-save-all" onclick="saveAllPrints()">
+                        <i class="save-icon"></i> Сохранить все изменения
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- модальное окно для набора те5кста -->
+    <div id="textInputModal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <h3>Добавить текст</h3>
+            <div class="form-group">
+                <label for="customText">Текст для печати:</label>
+                <textarea id="customText"
+                        placeholder="Введите ваш текст здесь..."
+                        maxlength="100"
+                        rows="3"></textarea>
+                <div class="char-counter">
+                    <span id="charCount">0</span>/100 символов
+                </div>
+            </div>
+            <div class="modal-actions">
+                <button class="btn-cancel" onclick="closeTextInputModal()">Отмена</button>
+                <button class="btn-confirm" onclick="addCustomText()">Добавить текст</button>
             </div>
         </div>
     </div>

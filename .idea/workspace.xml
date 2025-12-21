@@ -10,7 +10,7 @@
       <change beforePath="$PROJECT_DIR$/shop/terminal/models.py" beforeDir="false" afterPath="$PROJECT_DIR$/shop/terminal/models.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/shop/terminal/static/css/styles.css" beforeDir="false" afterPath="$PROJECT_DIR$/shop/terminal/static/css/styles.css" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/shop/terminal/static/terminal/terminal.js" beforeDir="false" afterPath="$PROJECT_DIR$/shop/terminal/static/terminal/terminal.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/shop/terminal/views.py" beforeDir="false" afterPath="$PROJECT_DIR$/shop/terminal/views.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/shop/terminal/templates/terminal/step4_prints.html" beforeDir="false" afterPath="$PROJECT_DIR$/shop/terminal/templates/terminal/step4_prints.html" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -132,6 +132,17 @@
     </task>
     <option name="localTasksCounter" value="2" />
     <servers />
+  </component>
+  <component name="Vcs.Log.Tabs.Properties">
+    <option name="TAB_STATES">
+      <map>
+        <entry key="MAIN">
+          <value>
+            <State />
+          </value>
+        </entry>
+      </map>
+    </option>
   </component>
   <component name="VcsManagerConfiguration">
     <MESSAGE value="тот же самый код, но этот запускается хз что изменилось мб структура" />
