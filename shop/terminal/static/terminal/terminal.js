@@ -38,22 +38,46 @@ let step5Data = {
     productColor: null,
     prints: [] // Все принты после сохранения
 };
+
+let appliedPromocode = null; // Текущий применённый промокод
+
 // =======================
 // ЗАПУСК ПРИЛОЖЕНИЯ
 // =======================
 function startApplication() {
-    console.log('startApplication вызвана');
+    console.log('=== startApplication() вызывается ===');
 
+    // 1. Скрываем скринсейвер
     const screensaver = document.getElementById('screensaver');
     if (screensaver) screensaver.style.display = 'none';
 
+    // 2. Показываем приложение
     const app = document.getElementById('app');
-    if (app) app.style.display = 'flex';
+    if (app) {
+        app.style.display = 'flex';
+    }
 
-    // Загружаем товары через API
+    // 3. Показываем шаг 1
+    document.querySelectorAll('.step-container').forEach(c => {
+        c.style.display = 'none';
+    });
+
+    const step1 = document.getElementById('step1');
+    if (step1) {
+        step1.style.display = 'flex';
+        currentStep = 1;
+    }
+
+    // 4. ВАЖНО: Восстанавливаем навигацию
+    updateNavigation();
+
+    // 5. Загружаем товары
     loadProducts();
 
+    // 6. Сбрасываем таймер
     resetInactivityTimer();
+
+    console.log('Приложение запущено, шаг 1, навигация восстановлена');
 }
 
 // =======================
@@ -78,14 +102,16 @@ function showStep(step) {
 
     // 1. Скрываем все шаги
     document.querySelectorAll('.step-container').forEach(c => {
-        c.style.display = 'none';
-        console.log(`Скрыт: ${c.id}`);
+        if (c.id !== `step${step}`) {
+            c.style.display = 'none';
+            console.log(`Скрыт: ${c.id}`);
+        }
     });
 
     // 2. Показываем нужный шаг
     const targetStep = document.getElementById(`step${step}`);
     if (targetStep) {
-        targetStep.style.display = 'flex';  // Используем flex как у шага 1
+        targetStep.style.display = 'flex';
         console.log(`Показан: step${step}`);
     } else {
         console.error(`Шаг ${step} не найден!`);
@@ -99,25 +125,131 @@ function showStep(step) {
     // 4. Обновляем навигацию
     updateNavigation();
 
-    // 5. Если это шаг 5, обновляем сводку
+    // 5. Особые действия при переходе на шаг 5
     if (step === 5) {
-        updateOrderSummary();
+        console.log('=== ПЕРЕХОД НА ШАГ 5 ===');
+
+//        // Автоматически сохраняем все несохраненные принты перед показом шага 5
+//        const unsavedPrints = getAllUnsavedPrints();
+//        if (unsavedPrints && unsavedPrints.length > 0) {
+//            console.log('Автосохранение', unsavedPrints.length, 'принтов...');
+//            updateStep5Data(unsavedPrints);
+//            markPrintsAsSaved(unsavedPrints);
+//        } else {
+//            console.log('Нет несохраненных принтов, обновляю только данные товара');
+//            updateStep5Data([]);
+//        }
+
+        // Обновляем сводку
+        setTimeout(() => {
+            updateOrderSummary();
+            console.log('Сводка обновлена');
+        }, 100);
     }
 }
 
 function updateNavigation() {
+    console.log('updateNavigation(), текущий шаг:', currentStep);
+
     const prevBtn = document.getElementById('prevBtn');
     const nextBtn = document.getElementById('nextBtn');
     const confirmBtn = document.getElementById('confirmBtn');
 
-    if (prevBtn) prevBtn.disabled = currentStep === 1;
-    if (nextBtn) nextBtn.style.display = currentStep === 5 ? 'none' : 'block';
-    if (confirmBtn) confirmBtn.style.display = currentStep === 5 ? 'block' : 'none';
+    if (!prevBtn || !nextBtn) {
+        console.error('Кнопки навигации не найдены');
+        return;
+    }
+
+    // 1. Всегда показываем контейнер навигации
+    const navigationContainer = document.querySelector('.navigation');
+    if (navigationContainer) {
+        navigationContainer.style.display = 'flex';
+    }
+
+    // 2. НА ШАГЕ 5: показываем "Назад", скрываем "Далее"
+    if (currentStep === 5) {
+        // Кнопка "Назад" активна
+        prevBtn.style.display = 'block';
+        prevBtn.disabled = false;
+
+        // Кнопка "Далее" скрыта
+        nextBtn.style.display = 'none';
+
+        // Если есть кнопка подтверждения - показываем её
+        if (confirmBtn) {
+            confirmBtn.style.display = 'block';
+        }
+
+        console.log('На шаге 5: показана кнопка Назад, скрыта кнопка Далее');
+        return;
+    }
+
+    // 3. НА ШАГАХ 1-4: стандартная навигация
+    prevBtn.style.display = 'block';
+    nextBtn.style.display = 'block';
+
+    // Отключаем "Назад" только на первом шаге
+    prevBtn.disabled = currentStep === 1;
+
+    // Кнопка "Далее" всегда активна
+    nextBtn.disabled = false;
+
+    // Скрываем кнопку подтверждения
+    if (confirmBtn) {
+        confirmBtn.style.display = 'none';
+    }
+
+    console.log(`На шаге ${currentStep}: стандартная навигация`);
 }
 
 function nextStep() {
-    if (!validateCurrentStep()) return;
+    console.log('nextStep() вызывается, текущий шаг:', currentStep);
+
+    // Проверяем валидацию для текущего шага
+    if (!validateCurrentStep()) {
+        console.log('Валидация не пройдена');
+        return;
+    }
+
+    // ОСОБАЯ ПРОВЕРКА ДЛЯ ШАГА 4
+    if (currentStep === 4) {
+        console.log('=== ПРОВЕРКА ШАГА 4 ПЕРЕД ПЕРЕХОДОМ ===');
+
+        // 1. Проверяем, есть ли несохраненные принты
+        const unsavedPrints = getAllUnsavedPrints();
+        if (unsavedPrints && unsavedPrints.length > 0) {
+            alert(`У вас есть ${unsavedPrints.length} несохраненных принтов.\n\nНажмите кнопку "Сохранить все изменения" перед переходом к оформлению заказа.`);
+            console.log('Переход отменен: есть несохраненные принты');
+            return; // Не переходим дальше
+        }
+
+//        // 2. Проверяем пересечения (опционально, но полезно)
+//        const totalPrints = Object.values(orderPrints).reduce((sum, areaPrints) =>
+//            sum + (areaPrints ? areaPrints.length : 0), 0
+//        );
+//
+//        if (totalPrints > 0) {
+//            const intersections = checkAllPrintIntersections();
+//            if (intersections.length > 0) {
+//                const errorMessage = intersections.map(i =>
+//                    `• ${i.print1} и ${i.print2} пересекаются на зоне "${i.areaName}"`
+//                ).join('\n');
+//
+//                alert(`Обнаружены пересечения принтов:\n\n${errorMessage}\n\nИсправьте пересечения перед переходом.`);
+//                console.log('Переход отменен: есть пересечения принтов');
+//                return;
+//            }
+//        }
+
+        // 3. Если всё хорошо - переходим на шаг 5
+        console.log('Все проверки пройдены, переходим к шагу 5');
+        showStep(5);
+        return;
+    }
+
+    // Стандартный переход для шагов 1-3
     if (currentStep < 5) {
+        console.log('Переход к шагу', currentStep + 1);
         showStep(currentStep + 1);
     }
 }
@@ -151,7 +283,7 @@ function validateCurrentStep() {
         case 4:
             return true;
         case 5:
-            return validateConfirmationForm();
+            return true;
         default:
             return true;
     }
@@ -238,7 +370,6 @@ function selectProduct(modelName, firstProductId) {
     }, 100);
 }
 
-
 function highlightSelection(containerId, selectedId) {
     const container = document.getElementById(containerId);
     if (!container) return;
@@ -256,7 +387,6 @@ function highlightSelection(containerId, selectedId) {
 
 // Шаг 2 — модели
 // Новая функция для загрузки цветов выбранной модели (шаг 2)
-// Функция загрузки цветов для выбранной модели
 async function loadColorsForModel(modelName) {
     const container = document.getElementById('modelsContainer');
     if (!container) return;
@@ -423,6 +553,7 @@ async function loadSizesForModelAndColor(modelName, colorName) {
         container.innerHTML = `<div class="error-message">Ошибка загрузки размеров: ${error.message}</div>`;
     }
 }
+
 //выбор нужного размера
 function selectSize(id, sizeLabel, productId) {
     console.log('Выбран размер:', sizeLabel, 'ID товара:', productId);
@@ -447,18 +578,15 @@ function selectSize(id, sizeLabel, productId) {
 // ШАГ 4: ЗОНЫ ПЕЧАТИ И ПРИНТЫ
 // =======================
 
-// Глобальные переменные для хранения данных на шаге 4
-
-
 // Функция обновления данных продукта
-function updateOrderProductData() {
-    if (selectedData) {
-        orderData.productId = selectedData.productId;
-        orderData.productModel = selectedData.productModel;
-        orderData.productSize = selectedData.productSize;
-        orderData.productColor = selectedData.productColor;
-    }
-}
+//function updateOrderProductData() {
+//    if (selectedData) {
+//        orderData.productId = selectedData.productId;
+//        orderData.productModel = selectedData.productModel;
+//        orderData.productSize = selectedData.productSize;
+//        orderData.productColor = selectedData.productColor;
+//    }
+//}
 
 // Настраиваем область печати
 function switchArea(areaId, config) {
@@ -947,9 +1075,6 @@ function hasIntersectionWithAny(printObj, otherPrints, ignorePrint = null) {
     return false;
 }
 
-// Глобальные переменные добавьте в начало файла:
-//let selectedPrintElement = null; // Текущий выбранный элемент принта
-
 // Обновленная функция selectPrint
 function selectPrint(id, name, imageUrl) {
     if (!currentAreaId || !currentAreaConfig) {
@@ -989,6 +1114,7 @@ function selectPrint(id, name, imageUrl) {
     renderAreaPrints();
     updateCurrentPrintsList();
 }
+
 // Обновленная функция renderAreaPrints
 function renderAreaPrints() {
     const printArea = document.getElementById('printArea');
@@ -1109,42 +1235,42 @@ function updateStep5Data(unsavedPrints) {
     step5Data.productSize = selectedData.size?.size;
     step5Data.productColor = selectedData.color?.name;
 
-    // 2. Если передали пустой массив, оставляем только данные продукта
-    if (!unsavedPrints || unsavedPrints.length === 0) {
-        console.log('Нет принтов для сохранения, оставляем только данные товара');
-        step5Data.prints = []; // Очищаем принты
-        console.log('step5Data обновлен:', step5Data);
-        return;
-    }
+    // 2. Очищаем старые принты
+    step5Data.prints = [];
 
-    // 3. Добавляем каждый несохраненный принт в step5Data
-    unsavedPrints.forEach(print => {
-        const printForDB = {
-            area_id: parseInt(print.areaId),
-            content: print.isCustomText
-                ? print.name  // Для текстовых: текст как есть
-                : `prints/${print.name}`, // Для обычных: добавляем префикс "prints/"
-            position_x: parseFloat(print.x),
-            position_y: parseFloat(print.y)
-        };
+    // 3. Добавляем каждый принт в step5Data
+    if (unsavedPrints && unsavedPrints.length > 0) {
+        unsavedPrints.forEach(print => {
+            let content;
+            if (print.isCustomText) {
+                // Для текстовых: сам текст
+                content = print.name;
+            } else if (print.printId) {
+                // Для обычных: "prints/название"
+                content = `prints/${print.name}`;
+            } else {
+                // Запасной вариант
+                content = print.name;
+            }
 
-        // Ищем принт с таким же content в той же зоне
-        const existingIndex = step5Data.prints.findIndex(p =>
-            p.area_id === printForDB.area_id &&
-            p.content === printForDB.content);
+            const printForDB = {
+                area_id: parseInt(print.areaId),
+                content: content,
+                position_x: parseFloat(print.x),
+                position_y: parseFloat(print.y)
+            };
 
-        if (existingIndex !== -1) {
-            // Обновляем существующий принт
-            step5Data.prints[existingIndex] = printForDB;
-            console.log(`Обновлен принт "${print.name}" в step5Data`);
-        } else {
-            // Добавляем новый принт
             step5Data.prints.push(printForDB);
             console.log(`Добавлен принт "${print.name}" в step5Data`);
-        }
-    });
+        });
+    }
 
     console.log('step5Data обновлен:', step5Data);
+
+    // Сразу обновляем сводку на шаге 5
+    if (currentStep === 5) {
+        updateOrderSummary();
+    }
 }
 
 // Функция удаления принта
@@ -1210,6 +1336,11 @@ function saveAllPrints() {
         updateStep5Data([]); // Пустой массив
         alert('✅ Информация о товаре сохранена (принтов нет)');
     }
+
+    console.log('=== СОХРАНЕНО ДЛЯ ШАГА 5 ===');
+    console.log('Товар:', step5Data.productModel, step5Data.productColor, step5Data.productSize);
+    console.log('Принты:', step5Data.prints.length, 'шт.');
+    console.log('step5Data:', step5Data);
 }
 
 // Функция проверки всех пересечений
@@ -1461,92 +1592,628 @@ function updateProductInfo() {
         console.error('Элемент productInfoText не найден!');
     }
 }
-// =======================
-// ШАГ 5: ПОДТВЕРЖДЕНИЕ
-// =======================
-function setText(id, text) {
-    const el = document.getElementById(id);
-    if (el) el.textContent = text || '-';
-}
 
+// =======================
+// ШАГ 5: ФУНКЦИИ ДЛЯ ПОДТВЕРЖДЕНИЯ ЗАКАЗА
+// =======================
+
+// Главная функция обновления сводки заказа на шаге 5
 function updateOrderSummary() {
-    setText('summaryProduct', selectedData.product?.model || '-');
-    setText('summaryModel', selectedData.color?.name || '-');  // Исправьте с model на color
-    setText('summarySize', selectedData.size?.size || '-');
+    console.log('=== updateOrderSummary() ВЫЗВАНА ===');
+    console.log('step5Data:', step5Data);
 
-    // Добавьте информацию о принтах
-    let printsSummary = 'Нет принтов';
-    const totalPrints = Object.values(areaPrints).reduce((sum, arr) => sum + arr.length, 0);
-    if (totalPrints > 0) {
-        printsSummary = `${totalPrints} принт(ов) на ${Object.keys(areaPrints).length} зоне(ах)`;
+    // 1. Просто заполняем элементы, которые точно есть
+    // Проверяем разные возможные ID
+
+    // Для модели товара
+    const modelEl = document.getElementById('displayProductModel') ||
+                   document.getElementById('summaryProductModel') ||
+                   document.getElementById('summaryProduct');
+
+    if (modelEl) {
+        modelEl.textContent = step5Data.productModel || selectedData.product?.model || 'Не выбрано';
+        console.log('Заполнен элемент модели:', modelEl.id, '=', modelEl.textContent);
+    } else {
+        console.log('Элемент для модели не найден');
     }
-    setText('summaryPrint', printsSummary);
+
+    // Для цвета
+    const colorEl = document.getElementById('displayProductColor') ||
+                   document.getElementById('summaryProductColor') ||
+                   document.getElementById('summaryModel');
+
+    if (colorEl) {
+        colorEl.textContent = step5Data.productColor || selectedData.color?.name || 'Не выбрано';
+        console.log('Заполнен элемент цвета:', colorEl.id, '=', colorEl.textContent);
+    } else {
+        console.log('Элемент для цвета не найден');
+    }
+
+    // Для размера
+    const sizeEl = document.getElementById('displayProductSize') ||
+                  document.getElementById('summaryProductSize') ||
+                  document.getElementById('summarySize');
+
+    if (sizeEl) {
+        sizeEl.textContent = step5Data.productSize || selectedData.size?.size || 'Не выбрано';
+        console.log('Заполнен элемент размера:', sizeEl.id, '=', sizeEl.textContent);
+    } else {
+        console.log('Элемент для размера не найден');
+    }
+
+    // 2. Обновляем принты
+    updatePrintsDisplay();
+    updatePromoDisplay();
 }
 
-// Валидация формы клиента
-function validateConfirmationForm() {
-    const name = document.getElementById('customerName').value.trim();
-    const phone = document.getElementById('customerPhone').value.trim();
+// Функция отображения принтов, сгруппированных по зонам
+function updatePrintsDisplay() {
+    console.log('=== updatePrintsDisplay() ===');
 
-    if (!name || !phone) {
-        alert('Пожалуйста, заполните ФИО и телефон');
-        return false;
+    // Ищем контейнер для принтов
+    const printsContainer = document.getElementById('displayPrints') ||
+                           document.getElementById('printsSummary') ||
+                           document.getElementById('summaryPrint');
+
+    if (!printsContainer) {
+        console.log('Контейнер для принтов не найден!');
+        return;
     }
-    return true;
+
+    console.log('Найден контейнер для принтов:', printsContainer.id);
+
+    // Проверяем данные
+    if (!step5Data.prints || step5Data.prints.length === 0) {
+        printsContainer.innerHTML = '<div style="color: #888; padding: 20px; text-align: center;">Принты не добавлены</div>';
+        console.log('Нет принтов для отображения');
+        return;
+    }
+
+    console.log('Всего принтов:', step5Data.prints.length);
+
+    // Самый простой вывод - просто список
+    let html = '';
+
+    // Группируем по зонам
+    const zones = {};
+    step5Data.prints.forEach(print => {
+        const zoneId = print.area_id;
+        if (!zones[zoneId]) zones[zoneId] = [];
+        zones[zoneId].push(print);
+    });
+
+    // Выводим
+    Object.keys(zones).forEach(zoneId => {
+        const zoneName = `Сторона ${zoneId}`; // Временно просто номер
+        const prints = zones[zoneId];
+
+        html += `<div style="margin: 10px 0; padding: 10px; background: #2a2a2a; border-radius: 5px;">`;
+        html += `<strong style="color: #FF9800;">${zoneName}:</strong><br>`;
+
+        prints.forEach(print => {
+            const name = print.content.replace('prints/', '');
+            html += `<div style="color: white; padding: 5px 0 5px 15px;">• ${name}</div>`;
+        });
+
+        html += `</div>`;
+    });
+
+    printsContainer.innerHTML = html;
+    console.log('Принты отображены');
 }
 
-// =======================
-// ОТПРАВКА ЗАКАЗА
-// =======================
-async function submitOrder() {
-    if (!validateConfirmationForm()) return;
+// Функция для получения названия зоны по ID
+// вроде как не используется, а используется предыдущая 'простая' версия
+//function getAreaNameById(areaId) {
+//    try {
+//        // Ищем вкладку с таким data-area-id среди всех вкладок зон
+//        const allTabs = document.querySelectorAll('.area-tab');
+//        for (let tab of allTabs) {
+//            if (tab.dataset.areaId == areaId) {
+//                return tab.textContent.trim();
+//            }
+//        }
+//
+//        // Если вкладка не найдена в текущем DOM, пробуем найти в сохраненных данных
+//        console.log(`Вкладка для зоны ${areaId} не найдена в DOM`);
+//        return null;
+//
+//    } catch (error) {
+//        console.error('Ошибка при получении названия зоны:', error);
+//        return null;
+//    }
+//}
 
-    const orderData = {
-        product_id: selectedData.size.product_id, // ID конкретного товара
-        customer_name: document.getElementById('customerName').value,
-        phone_number: document.getElementById('customerPhone').value,
-        prints: collectPrintsPayload()
-    };
-
-    console.log('Отправляем заказ:', orderData);
+// Функция оформления заказа
+async function createOrder() {
+    console.log('=== createOrder() ВЫЗВАНА ===');
 
     try {
+        // 1. Получаем данные клиента
+        const nameInput = document.getElementById('customerNameInput');
+        const phoneInput = document.getElementById('customerPhoneInput');
+
+        if (!nameInput || !phoneInput) {
+            alert('Ошибка: поля ввода не найдены');
+            return;
+        }
+
+        const customerName = nameInput.value.trim();
+        const phoneNumber = phoneInput.value.trim();
+
+        // 2. Проверяем заполненность
+        if (!customerName) {
+            alert('Пожалуйста, введите ФИО клиента');
+            nameInput.focus();
+            return;
+        }
+
+        if (!phoneNumber) {
+            alert('Пожалуйста, введите номер телефона');
+            phoneInput.focus();
+            return;
+        }
+
+        // 3. Проверяем товар
+        if (!step5Data.productId) {
+            alert('Ошибка: товар не выбран');
+            return;
+        }
+
+        // 4. Подготавливаем данные С ПРОМОКОДОМ
+        const orderData = {
+            product_id: step5Data.productId,
+            customer_name: customerName,
+            phone_number: phoneNumber,
+            prints: step5Data.prints || [],
+            promocode: appliedPromocode ? appliedPromocode.code : null // ДОБАВЛЯЕМ ПРОМОКОД
+        };
+
+        console.log('Отправляю заказ JSON:', JSON.stringify(orderData, null, 2));
+        console.log('Prints структура:', step5Data.prints);
+        console.log('Промокод:', appliedPromocode ? appliedPromocode.code : 'не указан');
+
+        // 5. Показываем загрузку
+        const submitBtn = document.getElementById('submitOrderBtn');
+        submitBtn.innerHTML = 'СОХРАНЯЕМ...';
+        submitBtn.disabled = true;
+
+        // 6. Отправляем на сервер с таймаутом (оставляем твою реализацию)
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 10000);
+
         const response = await fetch(API_URLS.createOrder, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
                 'X-CSRFToken': getCSRFToken()
             },
-            body: JSON.stringify(orderData)
+            body: JSON.stringify(orderData),
+            signal: controller.signal
+        });
+
+        clearTimeout(timeoutId);
+
+        console.log('Статус ответа:', response.status, response.statusText);
+
+        // 7. Сначала читаем как текст, чтобы посмотреть что пришло
+        const responseText = await response.text();
+        console.log('Ответ сервера (текст):', responseText.substring(0, 500));
+
+        let result;
+        try {
+            result = JSON.parse(responseText);
+        } catch (jsonError) {
+            console.error('Не могу распарсить JSON. Ответ сервера:', responseText);
+            throw new Error(`Сервер вернул не JSON. Статус: ${response.status}. Ответ: ${responseText.substring(0, 200)}`);
+        }
+
+        console.log('Ответ сервера (JSON):', result);
+
+        // 8. Обрабатываем ответ
+        if (response.ok && result.success) {
+            // Показываем экран успеха
+            showSuccessScreen(result.order_number || result.order_id || '000001');
+        } else {
+            throw new Error(result.error || result.message || 'Неизвестная ошибка сервера');
+        }
+
+    } catch (error) {
+        console.error('Ошибка создания заказа:', error);
+
+        let errorMessage = 'Ошибка при создании заказа';
+        if (error.name === 'AbortError') {
+            errorMessage = 'Превышено время ожидания ответа сервера';
+        } else if (error.message.includes('Не могу распарсить JSON')) {
+            errorMessage = 'Сервер вернул ошибку. Проверьте консоль для подробностей.';
+        } else {
+            errorMessage = error.message;
+        }
+
+        alert(errorMessage);
+
+        // Восстанавливаем кнопку
+        const submitBtn = document.getElementById('submitOrderBtn');
+        if (submitBtn) {
+            submitBtn.innerHTML = 'ОФОРМИТЬ ЗАКАЗ';
+            submitBtn.disabled = false;
+        }
+    }
+}
+
+// Функция показа экрана успеха
+function showSuccessScreen(orderNumber) {
+    console.log('Показываю экран успеха для заказа', orderNumber);
+
+    // 1. Скрываем шаг 5
+    document.getElementById('step5').style.display = 'none';
+
+    // 2. Скрываем навигацию
+    const navigation = document.querySelector('.navigation');
+    if (navigation) navigation.style.display = 'none';
+
+    // 3. Показываем экран успеха
+    const successScreen = document.getElementById('successScreen');
+    if (successScreen) {
+        document.getElementById('orderNumberDisplay').textContent = orderNumber;
+        successScreen.style.display = 'flex';
+    } else {
+        console.error('Экран успеха не найден');
+    }
+}
+
+// Функция начала нового заказа
+function startNewOrder() {
+    console.log('=== startNewOrder() вызывается ===');
+
+    // 1. Скрываем экран успеха
+    const successScreen = document.getElementById('successScreen');
+    if (successScreen) {
+        successScreen.style.display = 'none';
+    }
+
+    // 2. Сбрасываем все данные
+    resetOrderData();
+
+    // 3. Показываем скринсейвер
+    document.getElementById('screensaver').style.display = 'flex';
+    document.getElementById('app').style.display = 'none';
+
+    // 4. Восстанавливаем обработчик скринсейвера
+    document.getElementById('screensaver').onclick = startApplication;
+
+    console.log('Терминал готов к новому заказу');
+}
+
+// Функция сброса данных после успешного заказа
+function resetOrderData() {
+    console.log('=== resetOrderData() ВЫЗВАНА ===');
+
+    try {
+        // 1. Сбрасываем глобальные переменные
+        currentStep = 1;
+        selectedData = {
+            product: null,
+            color: null,
+            size: null
+        };
+
+        orderPrints = {};
+        selectedPrintElement = null;
+        currentAreaId = null;
+        currentAreaConfig = null;
+
+        step5Data = {
+            productId: null,
+            productModel: null,
+            productSize: null,
+            productColor: null,
+            prints: []
+        };
+
+        console.log('Глобальные переменные сброшены');
+
+        // 2. Очищаем поля ввода шага 5
+        const nameInput = document.getElementById('customerNameInput');
+        const phoneInput = document.getElementById('customerPhoneInput');
+
+        if (nameInput) {
+            nameInput.value = '';
+            console.log('Поле имени очищено');
+        }
+        if (phoneInput) {
+            phoneInput.value = '';
+            console.log('Поле телефона очищено');
+        }
+
+        // 3. Восстанавливаем кнопку оформления заказа
+        const submitBtn = document.getElementById('submitOrderBtn');
+        if (submitBtn) {
+            submitBtn.innerHTML = 'ОФОРМИТЬ ЗАКАЗ';
+            submitBtn.disabled = false;
+            submitBtn.onclick = createOrder;
+            console.log('Кнопка оформления заказа восстановлена');
+        }
+
+        // 4. Очищаем все контейнеры данных
+        const containersToClear = [
+            'productsContainer',
+            'modelsContainer',
+            'sizesContainer',
+            'printsGallery',
+            'currentPrintsList',
+            'printAreasTabs',
+            'productSideImageContainer',
+            'printArea',
+            'displayPrints',
+            'displayProductModel',
+            'displayProductColor',
+            'displayProductSize'
+        ];
+
+        containersToClear.forEach(id => {
+            const container = document.getElementById(id);
+            if (container) {
+                container.innerHTML = '';
+                console.log(`Контейнер #${id} очищен`);
+            }
+        });
+
+        // 5. Сбрасываем визуальный выбор
+        document.querySelectorAll('.selected').forEach(el => {
+            el.classList.remove('selected');
+        });
+
+        // 6. Скрываем все шаги кроме 1-го
+        document.querySelectorAll('.step-container').forEach((step, index) => {
+            if (index === 0) {
+                step.style.display = 'flex';
+            } else {
+                step.style.display = 'none';
+            }
+        });
+
+        // 7. Обновляем навигацию
+        updateNavigation();
+
+        console.log('Все данные успешно сброшены');
+
+    } catch (error) {
+        console.error('Ошибка в resetOrderData:', error);
+    }
+}
+
+// Функция получения CSRF токена для Django
+function getCSRFToken() {
+    const name = 'csrftoken';
+    let cookieValue = null;
+
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+
+    return cookieValue;
+}
+
+//// Вспомогательная функция для установки текста в элемент
+//function setText(elementId, text) {
+//    const element = document.getElementById(elementId);
+//    if (element) {
+//        element.textContent = text;
+//    } else {
+//        console.log(`Элемент #${elementId} не найден`);
+//    }
+//}
+
+// Инициализация при загрузке страницы
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('DOM загружен, инициализирую...');
+
+    // 1. Находим кнопку оформления заказа
+    const submitBtn = document.getElementById('submitOrderBtn');
+    if (submitBtn) {
+        submitBtn.addEventListener('click', createOrder);
+        console.log('Обработчик установлен для кнопки оформления заказа');
+    }
+
+    // 2. Убедимся, что экран успеха скрыт
+    const successScreen = document.getElementById('successScreen');
+    if (successScreen) {
+        successScreen.style.display = 'none';
+    }
+
+    // 3. Убедимся, что навигация видна
+    const navigation = document.querySelector('.navigation');
+    if (navigation) {
+        navigation.style.display = 'flex';
+    }
+});
+
+//===================
+// ШАГ 5 ПРОМОКОД
+//===================
+
+
+// Проверка и применение промокода
+async function checkPromocode() {
+    console.log('=== checkPromocode() вызывается ===');
+
+    const promocodeInput = document.getElementById('promocodeInput');
+    const checkBtn = document.getElementById('checkPromocodeBtn');
+    const messageEl = document.getElementById('promocodeMessage');
+
+    if (!promocodeInput || !checkBtn || !messageEl) return;
+
+    const code = promocodeInput.value.trim().toUpperCase();
+
+    if (!code) {
+        showPromocodeMessage('Введите промокод', 'error');
+        return;
+    }
+
+    // Показываем загрузку
+    checkBtn.innerHTML = 'ПРОВЕРКА...';
+    checkBtn.disabled = true;
+    showPromocodeMessage('Проверяем промокод...', 'info');
+
+    try {
+        const response = await fetch(API_URLS.checkPromocode, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCSRFToken()
+            },
+            body: JSON.stringify({ promocode: code })
         });
 
         const result = await response.json();
 
-        if (response.ok && result.success) {
-            document.getElementById('orderNumberDisplay').textContent = result.order_number;
-            document.getElementById('successScreen').style.display = 'flex';
-            document.getElementById('app').style.display = 'none';
+        if (response.ok && result.valid) {
+            // Промокод действителен
+            appliedPromocode = {
+                code: result.code,
+                discount: result.discount
+            };
+
+            showPromocodeMessage(result.message, 'success');
+
+            // ВАЖНО: Правильно меняем кнопку
+            checkBtn.innerHTML = 'УДАЛИТЬ';
+            checkBtn.disabled = false;
+
+            // Удаляем старый обработчик и добавляем новый
+            checkBtn.replaceWith(checkBtn.cloneNode(true));
+            const newBtn = document.getElementById('checkPromocodeBtn');
+            newBtn.onclick = removePromocode;
+            newBtn.style.background = 'linear-gradient(135deg, #ff6b6b, #ff5252)';
+
+            // Обновляем сводку
+            updateOrderSummary();
+
         } else {
-            throw new Error(result.error || 'Ошибка сервера');
+            // Промокод недействителен
+            showPromocodeMessage(result.message, 'error');
+            appliedPromocode = null;
         }
-    } catch (e) {
-        alert('Ошибка при создании заказа: ' + e.message);
+
+    } catch (error) {
+        console.error('Ошибка проверки промокода:', error);
+        showPromocodeMessage('Ошибка соединения с сервером', 'error');
+        appliedPromocode = null;
+    } finally {
+        // Восстанавливаем кнопку если промокод не применён
+        if (!appliedPromocode) {
+            checkBtn.innerHTML = 'ПРИМЕНИТЬ';
+            checkBtn.disabled = false;
+            checkBtn.style.background = 'linear-gradient(135deg, #4CAF50, #45a049)';
+        }
     }
 }
 
-function collectPrintsPayload() {
-    const payload = [];
-    Object.keys(areaPrints).forEach(areaId => {
-        areaPrints[areaId].forEach(p => {
-            payload.push({
-                area_id: areaId,
-                print_id: p.id,
-                x: p.x,
-                y: p.y,
-                width: p.width,
-                height: p.height
-            });
-        });
-    });
-    return payload;
+// Функция для сообщений (убедись, что она есть)
+function showPromocodeMessage(text, type = 'info') {
+    const messageEl = document.getElementById('promocodeMessage');
+    if (!messageEl) {
+        console.error('Элемент promocodeMessage не найден!');
+        return;
+    }
+
+    messageEl.textContent = text;
+    messageEl.className = `promocode-message promocode-${type}`;
+    console.log(`Показано сообщение: "${text}" (${type})`);
+
+    // Автоочистка информационных сообщений
+    if (type === 'info') {
+        setTimeout(() => {
+            if (messageEl.textContent === text) {
+                messageEl.textContent = '';
+                messageEl.className = 'promocode-message';
+            }
+        }, 3000);
+    }
+}
+
+// Удаление применённого промокода
+function removePromocode() {
+    console.log('=== removePromocode() вызывается ===');
+
+    const promocodeInput = document.getElementById('promocodeInput');
+    const checkBtn = document.getElementById('checkPromocodeBtn');
+    const messageEl = document.getElementById('promocodeMessage');
+
+    // Очищаем поле
+    if (promocodeInput) promocodeInput.value = '';
+
+    // Очищаем сообщение
+    if (messageEl) {
+        messageEl.textContent = '';
+        messageEl.className = 'promocode-message';
+    }
+
+    // Сбрасываем промокод
+    appliedPromocode = null;
+
+    // Восстанавливаем кнопку с новым обработчиком
+    if (checkBtn) {
+        checkBtn.innerHTML = 'ПРИМЕНИТЬ';
+        checkBtn.disabled = false;
+        checkBtn.style.background = 'linear-gradient(135deg, #4CAF50, #45a049)';
+
+        // ВАЖНО: Перепривязываем обработчик
+        checkBtn.replaceWith(checkBtn.cloneNode(true));
+        const newBtn = document.getElementById('checkPromocodeBtn');
+        newBtn.onclick = checkPromocode;
+    }
+
+    // Обновляем сводку
+    updateOrderSummary();
+
+    showPromocodeMessage('Промокод удалён', 'info');
+    console.log('Промокод удалён');
+}
+
+// Расчёт скидки (процентная)
+function calculateDiscount(basePrice) {
+    if (!appliedPromocode || !basePrice) return 0;
+
+    // Процентная скидка
+    return basePrice * (appliedPromocode.discount / 100);
+}
+
+// Отображение информации о промокоде
+function updatePromoDisplay() {
+    // Находим или создаём блок для промокода
+    let promoDisplay = document.getElementById('promoDisplay');
+
+    if (!promoDisplay) {
+        const summaryContainer = document.querySelector('.summary-container') ||
+                                document.getElementById('step5');
+
+        if (summaryContainer) {
+            promoDisplay = document.createElement('div');
+            promoDisplay.id = 'promoDisplay';
+            promoDisplay.className = 'promo-display';
+            summaryContainer.appendChild(promoDisplay);
+        }
+    }
+
+    if (promoDisplay) {
+        if (appliedPromocode) {
+            promoDisplay.innerHTML = `
+                <div class="applied-promo">
+                    <span>Промокод:</span>
+                    <span class="promo-code">${appliedPromocode.code} (${appliedPromocode.discount}% скидка)</span>
+                </div>
+            `;
+        } else {
+            promoDisplay.innerHTML = '';
+        }
+    }
 }

@@ -1,29 +1,67 @@
-<div id="step5" class="step-container">
-    <div class="step-header">ПОДТВЕРЖДЕНИЕ ЗАКАЗА</div>
+<div class="step-header">
+    <div>ПОДТВЕРЖДЕНИЕ ЗАКАЗА</div>
+</div>
 
-    <div class="confirmation-step">
-        <div class="customer-input">
-            <input type="text"
-                   id="customerName"
-                   placeholder="Ваше ФИО">
+<div class="confirmation-content">
+    <!-- Информация о заказе -->
+    <div class="order-summary">
+        <h3>ВАШ ЗАКАЗ</h3>
 
-            <input type="tel"
-                   id="customerPhone"
-                   placeholder="Номер телефона">
+        <!-- Товар -->
+        <div class="summary-section">
+            <h4>Товар:</h4>
+            <div class="summary-item">
+                <span class="label">Модель:</span>
+                <span class="value" id="displayProductModel">-</span>
+            </div>
+            <div class="summary-item">
+                <span class="label">Цвет:</span>
+                <span class="value" id="displayProductColor">-</span>
+            </div>
+            <div class="summary-item">
+                <span class="label">Размер:</span>
+                <span class="value" id="displayProductSize">-</span>
+            </div>
         </div>
 
-        <div class="order-summary" id="orderSummary">
-            <h3>Ваш заказ:</h3>
-            <p><strong>Изделие:</strong> <span id="summaryProduct">-</span></p>
-            <p><strong>Модель:</strong> <span id="summaryModel">-</span></p>
-            <p><strong>Размер:</strong> <span id="summarySize">-</span></p>
-            <p><strong>Принты (по зонам):</strong> <span id="summaryPrint">-</span></p>
-            <p><strong>ФИО:</strong> <span id="summaryName">-</span></p>
-            <p><strong>Телефон:</strong> <span id="summaryPhone">-</span></p>
+        <!-- Принты по зонам -->
+        <div class="summary-section">
+            <h4>Принты:</h4>
+            <div id="displayPrints">
+                <!-- Здесь появятся принты -->
+            </div>
         </div>
+    </div>
 
-        <button id="confirmOrderBtn" onclick="submitOrder()">
-            ПОДТВЕРДИТЬ ЗАКАЗ
+    <div class="promocode-section">
+    <h3>Промокод</h3>
+    <div class="promocode-input-group">
+        <input
+            type="text"
+            id="promocodeInput"
+            placeholder="Введите промокод"
+            maxlength="20"
+        >
+        <button
+            class="btn-promocode"
+            id="checkPromocodeBtn"
+            onclick="checkPromocode()"
+        >
+            Применить
         </button>
     </div>
+    <div id="promocodeMessage" class="promocode-message"></div>
+    </div>
+
+    <!-- Данные клиента -->
+    <div class="customer-data">
+        <h3>ВАШИ ДАННЫЕ</h3>
+
+        <input type="text" id="customerNameInput" placeholder="ФИО" class="form-input">
+        <input type="tel" id="customerPhoneInput" placeholder="Телефон" class="form-input">
+
+    </div>
+    <button class="confirm-btn" id="submitOrderBtn">
+        ОФОРМИТЬ ЗАКАЗ
+    </button>
 </div>

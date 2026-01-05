@@ -1090,238 +1090,371 @@ body {
 /* =========================
    ШАГ 5: ПОДТВЕРЖДЕНИЕ ЗАКАЗА
    ========================= */
-.confirmation-step {
-    padding: 40px;
+/* ПРОСТОЙ СТИЛЬ
+   ========================= */
+.confirmation-content {
+    padding: 20px;
     display: flex;
     flex-direction: column;
-    height: calc(100vh - 180px);
-    gap: 30px;
-}
-
-.customer-input {
-    margin-bottom: 20px;
-}
-
-.customer-input input {
-    width: 100%;
-    padding: 25px;
-    margin: 15px 0;
-    background: #222;
-    color: #fff;
-    border: 3px solid #333;
-    border-radius: 15px;
-    font-size: 1.5em;
-    transition: all 0.3s ease;
-}
-
-.customer-input input:focus {
-    outline: none;
-    border-color: #4CAF50;
-    box-shadow: 0 0 20px rgba(76, 175, 80, 0.3);
-}
-
-.customer-input input::placeholder {
-    color: #888;
-    opacity: 0.7;
-}
-
-.order-summary {
-    background: #222;
-    padding: 35px;
-    border-radius: 20px;
-    flex: 1;
-    font-size: 1.3em;
-    border: 3px solid #333;
+    gap: 20px;
+    height: calc(100% - 60px);
     overflow-y: auto;
 }
 
-.order-summary h3 {
-    margin-bottom: 30px;
-    font-size: 1.8em;
-    color: #4CAF50;
-    text-transform: uppercase;
-    letter-spacing: 1px;
-    text-align: center;
-}
-
-.order-summary p {
-    margin: 15px 0;
-    padding: 15px 20px;
-    background: #333;
+.order-summary, .customer-data {
+    background: #222;
     border-radius: 10px;
-    border-left: 4px solid #4CAF50;
-    transition: background 0.3s ease;
+    padding: 20px;
+    border: 2px solid #333;
 }
 
-.order-summary p:hover {
-    background: #3a3a3a;
+.order-summary h3, .customer-data h3 {
+    color: #fff;
+    margin-bottom: 20px;
+    text-align: center;
+    font-size: 1.5em;
 }
 
-.order-summary strong {
+.summary-section {
+    margin-bottom: 20px;
+}
+
+.summary-section h4 {
     color: #4CAF50;
-    min-width: 200px;
-    display: inline-block;
+    margin-bottom: 15px;
+    font-size: 1.2em;
 }
 
-#confirmOrderBtn {
-    padding: 25px 50px;
-    font-size: 1.8em;
+.summary-item {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 10px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #333;
+}
+
+.summary-item:last-child {
+    border-bottom: none;
+}
+
+.label {
+    color: #aaa;
+    font-weight: bold;
+}
+
+.value {
+    color: #fff;
+}
+/* сообщение о сохранении заказа */
+#orderSuccessMessage {
+    background: rgba(76, 175, 80, 0.9);
+    color: white;
+    padding: 20px;
+    border-radius: 10px;
+    margin: 20px 0;
+    text-align: center;
+    font-size: 1.2em;
+    border: 3px solid #4CAF50;
+    animation: fadeIn 0.5s ease;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(-10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.confirm-btn {
+    transition: all 0.3s ease;
+}
+
+.confirm-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.print-name {
+    color: #fff;
+    padding: 5px 0;
+    padding-left: 15px;
+}
+
+.print-name:before {
+    content: "•";
+    color: #4CAF50;
+    position: absolute;
+    margin-left: -15px;
+}
+
+.no-prints {
+    color: #888;
+    font-style: italic;
+    text-align: center;
+    padding: 20px;
+}
+
+/* Форма */
+.form-input {
+    width: 100%;
+    padding: 15px;
+    margin-bottom: 15px;
+    background: #333;
+    color: #fff;
+    border: 2px solid #444;
+    border-radius: 8px;
+    font-size: 1.1em;
+}
+
+.form-input:focus {
+    outline: none;
+    border-color: #4CAF50;
+}
+
+.confirm-btn {
+    width: 100%;
+    padding: 15px;
     background: #4CAF50;
     color: white;
     border: none;
-    border-radius: 15px;
-    cursor: pointer;
-    transition: all 0.3s ease;
+    border-radius: 8px;
+    font-size: 1.3em;
     font-weight: bold;
-    text-transform: uppercase;
-    margin-top: 20px;
+    cursor: pointer;
+    margin-top: 10px;
 }
 
-#confirmOrderBtn:hover {
+.confirm-btn:hover {
     background: #45a049;
-    transform: translateY(-3px);
-    box-shadow: 0 10px 30px rgba(76, 175, 80, 0.4);
 }
 
-/* =========================
-   ЭКРАН УСПЕХА
-   ========================= */
-#successScreen {
-    position: fixed;
+/* Секция промокода */
+.promocode-section {
+    background: #2a2a2a;
+    border-radius: 10px;
+    padding: 20px;
+    margin: 20px 0;
+    border: 1px solid #444;
+}
+
+.promocode-section h3 {
+    margin-top: 0;
+    margin-bottom: 15px;
+    color: #FF9800;
+    font-size: 1.2em;
+}
+
+.promocode-input-group {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 10px;
+}
+
+#promocodeInput {
+    flex: 1;
+    padding: 12px 15px;
+    border: 2px solid #444;
+    border-radius: 8px;
+    background: #1a1a1a;
+    color: white;
+    font-size: 16px;
+    transition: border-color 0.3s;
+}
+
+#promocodeInput:focus {
+    outline: none;
+    border-color: #FF9800;
+}
+
+.btn-promocode {
+    padding: 12px 25px;
+    background: linear-gradient(135deg, #4CAF50, #45a049);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: bold;
+    font-size: 16px;
+    transition: all 0.3s;
+    white-space: nowrap;
+}
+
+.btn-promocode:hover {
+    background: linear-gradient(135deg, #45a049, #3d8b40);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(76, 175, 80, 0.3);
+}
+
+.btn-promocode:active {
+    transform: translateY(0);
+}
+
+.btn-promocode:disabled {
+    background: #666;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+}
+
+.promocode-message {
+    padding: 10px;
+    border-radius: 5px;
+    font-size: 14px;
+    text-align: center;
+    min-height: 20px;
+}
+
+.promocode-success {
+    color: #4CAF50;
+    background: rgba(76, 175, 80, 0.1);
+    border: 1px solid #4CAF50;
+}
+
+.promocode-error {
+    color: #ff6b6b;
+    background: rgba(255, 107, 107, 0.1);
+    border: 1px solid #ff6b6b;
+}
+
+.promocode-info {
+    color: #FF9800;
+    background: rgba(255, 152, 0, 0.1);
+    border: 1px solid #FF9800;
+}
+
+/* Добавь в сводку заказа блок для отображения скидки */
+.discount-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 10px 0;
+    border-top: 1px solid #444;
+    margin-top: 10px;
+    font-weight: bold;
+}
+
+.discount-amount {
+    color: #4CAF50;
+}
+
+.final-total {
+    font-size: 1.2em;
+    color: #FF9800;
+}
+
+/* 1. ОСНОВНОЙ СКРОЛЛ ДЛЯ ВСЕХ ШАГОВ */
+/* Стильный SWAG WW градиентный скроллбар */
+
+html, body {
+    margin: 0;
+    padding: 0;
+    overflow: hidden; /* Главное - убираем общий скролл */
+    width: 100vw;
+    height: 100vh;
+    max-width: 100vw;
+    max-height: 100vh;
+}
+
+/* 2. ОСНОВНОЙ КОНТЕЙНЕР ПРИЛОЖЕНИЯ */
+#app {
+    width: 100vw;
+    height: 100vh;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    background: #1a1a1a;
+}
+
+/* 3. КОНТЕЙНЕР ДЛЯ ВСЕХ ШАГОВ */
+.steps-container {
+    flex: 1;
+    overflow: hidden; /* Убираем скролл у контейнера шагов */
+    position: relative;
+}
+
+/* 4. КАЖДЫЙ ШАГ С ВЕРТИКАЛЬНЫМ СКРОЛЛОМ */
+.step-container {
+    position: absolute;
     top: 0;
     left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(0, 0, 0, 0.95);
-    display: none;
-    justify-content: center;
-    align-items: center;
-    z-index: 2000;
-    flex-direction: column;
-    text-align: center;
+    right: 0;
+    bottom: 0;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding: 20px;
+    padding-bottom: 100px; /* Место для навигации */
+    box-sizing: border-box;
 }
 
-.success-message {
-    font-size: 3em;
-    margin-bottom: 40px;
-    color: #4CAF50;
-    text-transform: uppercase;
-    letter-spacing: 2px;
-    animation: pulse 2s infinite;
+/* 5. ФИКСИРОВАННАЯ НАВИГАЦИЯ */
+.navigation {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: #1a1a1a;
+    padding: 15px 20px;
+    border-top: 2px solid #333;
+    z-index: 1000;
+    box-sizing: border-box;
 }
 
-.order-number {
-    font-size: 6em;
-    color: #4CAF50;
-    margin: 40px 0;
-    font-weight: bold;
-    text-shadow: 0 5px 20px rgba(76, 175, 80, 0.5);
-    animation: glow 2s infinite alternate;
-}
-
-@keyframes glow {
-    from { text-shadow: 0 5px 20px rgba(76, 175, 80, 0.5); }
-    to { text-shadow: 0 5px 30px rgba(76, 175, 80, 0.8), 0 0 20px rgba(76, 175, 80, 0.6); }
-}
-
-.success-note {
-    font-size: 1.8em;
-    opacity: 0.8;
-    margin-bottom: 40px;
-    color: #ddd;
-}
-
-/* =========================
-   ПРОКРУТКА
-   ========================= */
+/* 6. КРАСИВЫЙ СКРОЛЛБАР (оставляем твой стиль) */
 ::-webkit-scrollbar {
     width: 12px;
+    height: 0;
 }
 
 ::-webkit-scrollbar-track {
-    background: #222;
-    border-radius: 10px;
+    background: linear-gradient(180deg,
+        #1a1a1a 0%,
+        #222222 50%,
+        #1a1a1a 100%);
+    border-radius: 8px;
+    border: 1px solid #333;
 }
 
 ::-webkit-scrollbar-thumb {
-    background: #444;
-    border-radius: 10px;
-    border: 3px solid #222;
+    background: linear-gradient(180deg,
+        #888888 0%,
+        #666666 30%,
+        #555555 70%,
+        #444444 100%);
+    border-radius: 8px;
+    border: 2px solid #2a2a2a;
 }
 
-::-webkit-scrollbar-thumb:hover {
-    background: #555;
+/* 7. УБИРАЕМ ГОРИЗОНТАЛЬНЫЙ СКРОЛЛ У ВСЕХ ЭЛЕМЕНТОВ */
+* {
+    max-width: 100%;
+    box-sizing: border-box;
 }
 
-/* =========================
-   АДАПТИВНОСТЬ
-   ========================= */
-@media (max-width: 1200px) {
-    .print-step {
-        flex-direction: column;
-        height: auto;
-    }
-
-    .product-preview,
-    .print-info {
-        min-width: 100%;
-        max-width: 100%;
-    }
-
-    .prints-grid {
-        max-height: 250px;
-    }
-
-    .current-prints-summary {
-        max-height: 200px;
-    }
+/* 8. ОСОБО ДЛЯ КОНТЕЙНЕРОВ С КОНТЕНТОМ */
+.products-container,
+.models-container,
+.sizes-container,
+.prints-gallery,
+.current-prints-list,
+.summary-container {
+    width: 100%;
+    max-width: 100%;
+    overflow-x: hidden;
 }
 
-@media (max-width: 768px) {
-    .step-header {
-        font-size: 2em;
-        padding: 20px;
-    }
-
-    .products-grid,
-    .models-grid,
-    .sizes-grid {
-        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-        padding: 20px;
-        gap: 15px;
-    }
-
-    .nav-btn {
-        padding: 15px 30px;
-        font-size: 1.2em;
-        min-width: 120px;
-    }
-
-    .success-message {
-        font-size: 2em;
-    }
-
-    .order-number {
-        font-size: 4em;
-    }
+/* 9. ДЛЯ КАРТОЧЕК ТОВАРОВ/ЦВЕТОВ/РАЗМЕРОВ */
+.product-card,
+.color-card,
+.size-card,
+.print-card {
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
 }
 
-@media (max-width: 480px) {
-    .products-grid,
-    .models-grid,
-    .sizes-grid {
-        grid-template-columns: 1fr;
-    }
+/* 10. ЕСЛИ ВСЁ РАВНО ПОЯВЛЯЮТСЯ ПОЛОСЫ - ДОБАВЬ ЭТО */
+body::-webkit-scrollbar {
+    display: none; /* Прячем системный скроллбар */
+}
 
-    .product-card,
-    .color-card,
-    .size-card {
-        min-height: 150px;
-    }
-
-    .nav-btn {
-        padding: 12px 20px;
-        font-size: 1em;
-        min-width: 100px;
-    }
+body {
+    -ms-overflow-style: none; /* Для IE и Edge */
+    scrollbar-width: none; /* Для Firefox */
 }

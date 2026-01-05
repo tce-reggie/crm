@@ -7,10 +7,12 @@
     <list default="true" id="b03be4f4-a795-4972-b2f7-1611598ce511" name="Changes" comment="тот же самый код, но этот запускается хз что изменилось мб структура">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/shop/db.sqlite3" beforeDir="false" afterPath="$PROJECT_DIR$/shop/db.sqlite3" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/shop/terminal/models.py" beforeDir="false" afterPath="$PROJECT_DIR$/shop/terminal/models.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/shop/terminal/static/css/styles.css" beforeDir="false" afterPath="$PROJECT_DIR$/shop/terminal/static/css/styles.css" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/shop/terminal/static/terminal/terminal.js" beforeDir="false" afterPath="$PROJECT_DIR$/shop/terminal/static/terminal/terminal.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/shop/terminal/templates/terminal/step4_prints.html" beforeDir="false" afterPath="$PROJECT_DIR$/shop/terminal/templates/terminal/step4_prints.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/shop/terminal/templates/terminal/step5_confirmation.html" beforeDir="false" afterPath="$PROJECT_DIR$/shop/terminal/templates/terminal/step5_confirmation.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/shop/terminal/templates/terminal/success_screen.html" beforeDir="false" afterPath="$PROJECT_DIR$/shop/terminal/templates/terminal/success_screen.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/shop/terminal/urls.py" beforeDir="false" afterPath="$PROJECT_DIR$/shop/terminal/urls.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/shop/terminal/views.py" beforeDir="false" afterPath="$PROJECT_DIR$/shop/terminal/views.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />

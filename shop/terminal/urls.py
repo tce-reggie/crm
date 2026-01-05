@@ -21,5 +21,6 @@ urlpatterns = [
     path('api/prints/', views.api_prints, name='api_prints'),
     path('api/print-areas/', views.api_print_areas, name='api_print_areas'),
     path('api/orders/create/', views.api_create_order, name='api_create_order'),
-    path('api/check-promocode/', views.api_check_promocode, name='api_check_promocode'),
+    path('api/check-promocode/', views.check_promocode, name='check_promocode'),
+    path('api/get-promocodes/', views.get_promocodes, name='get_promocodes'),
 ]

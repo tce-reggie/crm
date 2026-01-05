@@ -1,13 +1,15 @@
-<div id="successScreen">
-    <div class="success-message">Заказ успешно оформлен!</div>
+<!-- В success_screen.html -->
+<div id="successScreen" style="display: none;">
+    <div class="success-message">ЗАКАЗ УСПЕШНО СОХРАНЕН!</div>
 
     <div class="order-number" id="orderNumberDisplay">000000</div>
 
     <div class="success-note">
-        Сфотографируйте номер заказа
+        Сфотографируйте или запомните номер заказа<br>
+        и подойдите на ресепшен
     </div>
 
-    <button class="nav-btn confirm" onclick="resetTerminal()">
+    <button class="nav-btn confirm" id="newOrderBtn" onclick="startNewOrder()">
         НОВЫЙ ЗАКАЗ
     </button>
 </div>

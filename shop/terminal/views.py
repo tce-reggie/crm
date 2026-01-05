@@ -3,6 +3,7 @@ from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.contrib import messages
 from django.db import transaction
+from django.views.decorators.http import require_POST
 import json
 
 from .models import (
@@ -141,7 +142,6 @@ def api_products(request):
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=500)
 
-
 # ШАГ 2: ЦВЕТА ДЛЯ МОДЕЛИ
 @csrf_exempt
 def api_colors(request):
@@ -179,7 +179,6 @@ def api_colors(request):
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=500)
 
-
 # ШАГ 3: РАЗМЕРЫ ДЛЯ МОДЕЛИ И ЦВЕТА
 @csrf_exempt
 def api_sizes(request):
@@ -215,7 +214,6 @@ def api_sizes(request):
     except Exception as e:
         print(f"ERROR api_sizes: {str(e)}")  # Отладка
         return JsonResponse({'error': str(e)}, status=500)
-
 
 # ШАГ 4: ПРИНТЫ И ЗОНЫ ПЕЧАТИ
 @csrf_exempt
@@ -266,7 +264,7 @@ def api_print_areas(request):
         print(f"ERROR api_print_areas: {str(e)}")
         return JsonResponse({'error': str(e)}, status=500)
 
-
+# ШАГ 5
 #======================================#
 @csrf_exempt
 def api_create_order(request):
@@ -275,85 +273,177 @@ def api_create_order(request):
         return JsonResponse({'success': False, 'error': 'Метод не разрешен'}, status=405)
 
     try:
+        print("=== ПОЛУЧЕН ЗАПРОС НА СОЗДАНИЕ ЗАКАЗА ===")  # Отладка
+        print("Тело запроса:", request.body)
+
         data = json.loads(request.body or '{}')
+        print("Распарсенные данные:", json.dumps(data, indent=2, ensure_ascii=False))
+
     except json.JSONDecodeError:
+        print("Ошибка парсинга JSON")
         return JsonResponse({'success': False, 'error': 'Неверный JSON'}, status=400)
 
     required = ['customer_name', 'phone_number', 'product_id']
     for field in required:
         if not data.get(field):
+            print(f"Отсутствует обязательное поле: {field}")
             return JsonResponse({'success': False, 'error': f'Поле {field} обязательно'}, status=400)
 
     try:
         product = Product.objects.select_for_update().get(product_id=data['product_id'])
+        print(f"Найден товар: {product}")
     except Product.DoesNotExist:
+        print(f"Товар с ID {data['product_id']} не найден")
         return JsonResponse({'success': False, 'error': 'Товар не найден'}, status=400)
 
     if product.quantity <= 0:
+        print(f"Товара нет в наличии: {product.quantity} шт.")
         return JsonResponse({'success': False, 'error': 'Нет в наличии'}, status=400)
 
     prints_payload = data.get('prints', [])
+    print(f"Получено принтов: {len(prints_payload)}")
 
-    with transaction.atomic():
-        order = Order.objects.create(
-            customer_name=data['customer_name'],
-            phone_number=data['phone_number'],
-            product=product,
-            status='new'
-        )
+    try:
+        with transaction.atomic():
+            order = Order.objects.create(
+                customer_name=data['customer_name'],
+                phone_number=data['phone_number'],
+                product=product,
+                status='new'
+            )
+            print(f"Создан заказ: #{order.order_id}")
 
-        # Промокод
-        promocode_code = data.get('promocode')
-        if promocode_code:
-            try:
-                promo = PromoCode.objects.get(code=promocode_code, is_active=True)
-                order.promocode = promo
-                order.save()
-            except PromoCode.DoesNotExist:
-                pass
+            # Промокод
+            promocode_code = data.get('promocode')
+            if promocode_code:
+                try:
+                    promo = PromoCode.objects.get(code=promocode_code, is_active=True)
+                    order.promocode = promo
+                    order.save()
+                    print(f"Применен промокод: {promocode_code}")
+                except PromoCode.DoesNotExist:
+                    print(f"Промокод не найден: {promocode_code}")
+                    pass
 
-        # Уменьшаем остаток
-        product.quantity -= 1
-        product.save()
+            # Уменьшаем остаток
+            product.quantity -= 1
+            product.save()
+            print(f"Остаток товара уменьшен до: {product.quantity}")
 
-        # Принты
-        for p in prints_payload:
-            try:
-                print_design = PrintDesign.objects.get(print_id=p['print_id'])
-                area = ProductPrintArea.objects.get(area_id=p['area_id'], product=product)
-                OrderPrint.objects.create(
-                    order=order,
-                    print_design=print_design,
-                    area=area,
-                    position_x=p.get('x', 0),
-                    position_y=p.get('y', 0),
-                )
-            except (PrintDesign.DoesNotExist, ProductPrintArea.DoesNotExist):
-                continue
+            # Принты - ИСПРАВЛЕННАЯ ЧАСТЬ!
+            for i, p in enumerate(prints_payload):
+                print(f"Обрабатываю принт {i + 1}: {p}")
 
-        order_number = f"ORD{order.order_id:06d}"
+                try:
+                    # Ключевое изменение: используем content вместо print_id
+                    content = p.get('content', '')
+                    area_id = p.get('area_id')
 
-    return JsonResponse({
-        'success': True,
-        'order_number': order_number,
-    })
+                    if not content or not area_id:
+                        print(f"Пропускаю принт {i + 1}: нет content или area_id")
+                        continue
+
+                    # Для текстовых принтов content - это сам текст
+                    # Для принтов из базы content может быть "prints/Название"
+
+                    area = ProductPrintArea.objects.get(area_id=area_id, product=product)
+                    print(f"Найдена зона печати: {area.area_name}")
+
+                    # Создаем запись OrderPrint с content в поле print_design
+                    OrderPrint.objects.create(
+                        order=order,
+                        print_design=content,  # Сохраняем content как есть
+                        area=area,
+                        position_x=p.get('position_x', p.get('x', 0)),
+                        position_y=p.get('position_y', p.get('y', 0)),
+                    )
+                    print(f"Создан OrderPrint для принта: {content}")
+
+                except ProductPrintArea.DoesNotExist:
+                    print(f"Зона печати {area_id} не найдена для товара {product.product_id}")
+                    continue
+                except Exception as e:
+                    print(f"Ошибка при создании OrderPrint: {str(e)}")
+                    continue
+
+            order_number = f"ORD{order.order_id:06d}"
+            print(f"Заказ успешно создан. Номер: {order_number}")
+
+        return JsonResponse({
+            'success': True,
+            'order_number': order_number,
+            'order_id': order.order_id
+        })
+
+    except Exception as e:
+        print(f"ОБЩАЯ ОШИБКА ПРИ СОЗДАНИИ ЗАКАЗА: {str(e)}")
+        import traceback
+        print(traceback.format_exc())
+
+        return JsonResponse({
+            'success': False,
+            'error': str(e)
+        }, status=500)
 
 
 @csrf_exempt
-def api_check_promocode(request):
-    """Проверка промокода"""
-    try:
-        code = request.GET.get('code')
-        if not code:
-            return JsonResponse({'valid': False, 'message': 'Промокод не указан'})
+def check_promocode(request):
+    """Проверка промокода (промокоды многоразовые)"""
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            promocode = data.get('promocode', '').strip().upper()
 
-        promocode = PromoCode.objects.get(code=code, is_active=True)
+            if not promocode:
+                return JsonResponse({
+                    'valid': False,
+                    'message': 'Введите промокод'
+                })
+
+            try:
+                # Ищем активный промокод
+                promo = PromoCode.objects.get(code=promocode, is_active=True)
+
+                # Промокод найден и активен - возвращаем данные
+                return JsonResponse({
+                    'valid': True,
+                    'code': promo.code,
+                    'discount': float(promo.discount),
+                    'message': f'Промокод применён! Скидка: {promo.discount}%'
+                })
+
+            except PromoCode.DoesNotExist:
+                return JsonResponse({
+                    'valid': False,
+                    'message': 'Промокод не найден или неактивен'
+                })
+
+        except Exception as e:
+            return JsonResponse({
+                'valid': False,
+                'message': f'Ошибка: {str(e)}'
+            })
+
+    return JsonResponse({'valid': False, 'message': 'Метод не разрешен'})
+
+def get_promocodes(request):
+    """Получение списка активных промокодов"""
+    try:
+        # Получаем только активные промокоды
+        active_promos = PromoCode.objects.filter(
+            is_active=True
+        ).values('code', 'discount')[:100]  # Ограничиваем количество
+
+        promocodes_list = list(active_promos)
+
         return JsonResponse({
-            'valid': True,
-            'discount': float(promocode.discount),
-            'message': f'Скидка {promocode.discount}%'
+            'success': True,
+            'promocodes': promocodes_list,
+            'count': len(promocodes_list)
         })
-    except PromoCode.DoesNotExist:
-        return JsonResponse({'valid': False, 'message': 'Промокод не найден'})
+
     except Exception as e:
-        return JsonResponse({'valid': False, 'message': str(e)}, status=500)
+        return JsonResponse({
+            'success': False,
+            'error': str(e)
+        })
