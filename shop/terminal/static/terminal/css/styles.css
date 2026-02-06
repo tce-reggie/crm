@@ -1396,7 +1396,7 @@ html, body {
     box-sizing: border-box;
 }
 
-/* 6. КРАСИВЫЙ СКРОЛЛБАР (оставляем твой стиль) */
+/* 6. КРАСИВЫЙ СКРОЛЛБАР */
 ::-webkit-scrollbar {
     width: 12px;
     height: 0;
@@ -1449,12 +1449,163 @@ html, body {
     box-sizing: border-box;
 }
 
-/* 10. ЕСЛИ ВСЁ РАВНО ПОЯВЛЯЮТСЯ ПОЛОСЫ - ДОБАВЬ ЭТО */
 body::-webkit-scrollbar {
-    display: none; /* Прячем системный скроллбар */
+    display: none;
 }
 
 body {
-    -ms-overflow-style: none; /* Для IE и Edge */
-    scrollbar-width: none; /* Для Firefox */
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+}
+
+
+/*----------------*/
+/* Success screen */
+/*----------------*/
+#successScreen {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: #1a1a1a; /* Тот же цвет фона, что и на других шагах */
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 2000;
+}
+
+.success-container {
+    width: 90%;
+    max-width: 500px;
+    padding: 20px;
+}
+
+.success-frame {
+    background: #222; /* Цвет как у .step-container */
+    border-radius: 15px;
+    padding: 40px 30px;
+    border: 3px solid #333; /* Та же рамка как у других контейнеров */
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+    text-align: center;
+}
+
+/* Заголовок */
+.success-header {
+    margin-bottom: 30px;
+    padding-bottom: 20px;
+    border-bottom: 2px solid #444;
+}
+
+.success-title {
+    color: #4CAF50;
+    font-size: 1.8em;
+    font-weight: bold;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+/* Сообщение */
+.success-message {
+    color: #ddd;
+    font-size: 1.1em;
+    line-height: 1.5;
+    margin-bottom: 30px;
+    padding: 0 10px;
+}
+
+/* Номер заказа */
+.order-number-wrapper {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    margin-bottom: 30px;
+    padding: 20px;
+    background: #2a2a2a; /* Чуть темнее фона рамки */
+    border-radius: 10px;
+    border: 2px solid #444;
+}
+
+.order-number-label {
+    color: #aaa;
+    font-size: 1.2em;
+    font-weight: bold;
+    letter-spacing: 2px;
+}
+
+.order-number {
+    color: #FF9800;
+    font-size: 2.5em;
+    font-weight: bold;
+    font-family: 'Courier New', monospace;
+    letter-spacing: 3px;
+}
+
+/* Разделитель */
+.divider {
+    height: 2px;
+    background: #333;
+    margin: 30px 0;
+    width: 100%;
+}
+
+/* Кнопка - используем те же стили что и у других кнопок */
+.success-button-wrapper {
+    margin-top: 10px;
+}
+
+.success-button {
+    background: linear-gradient(135deg, #4CAF50, #2E7D32);
+    color: white;
+    border: none;
+    border-radius: 10px;
+    padding: 18px 40px;
+    font-size: 1.2em;
+    font-weight: bold;
+    cursor: pointer;
+    min-width: 200px;
+    transition: all 0.3s ease;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.success-button:hover {
+    background: linear-gradient(135deg, #45a049, #2E7D32);
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(76, 175, 80, 0.3);
+}
+
+/* Адаптивность */
+@media (max-width: 600px) {
+    .success-frame {
+        padding: 30px 20px;
+    }
+
+    .success-title {
+        font-size: 1.5em;
+    }
+
+    .order-number {
+        font-size: 2em;
+    }
+
+    .success-button {
+        padding: 15px 30px;
+        font-size: 1.1em;
+    }
+}
+
+@media (max-width: 400px) {
+    .success-frame {
+        padding: 25px 15px;
+    }
+
+    .success-message {
+        font-size: 1em;
+    }
+
+    .order-number {
+        font-size: 1.8em;
+    }
 }

@@ -5,12 +5,27 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="b03be4f4-a795-4972-b2f7-1611598ce511" name="Changes" comment="тот же самый код, но этот запускается хз что изменилось мб структура">
+      <change afterPath="$PROJECT_DIR$/shop/terminal/static/admin/admin/admin.js" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/shop/terminal/static/admin/css/styles.css" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/shop/terminal/static/composing/composing.js" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/shop/terminal/static/printing/printing.js" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/shop/terminal/static/reception/reception.js" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/shop/terminal/templates/admin/base.html" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/shop/terminal/templates/composing/composing.html" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/shop/terminal/templates/composing/composing_interface.html" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/shop/terminal/templates/printing/printing.html" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/shop/terminal/templates/printing/printing_interface.html" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/shop/terminal/templates/reception/reception.html" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/shop/terminal/templates/reception/reception_interface.html" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/shop/db.sqlite3" beforeDir="false" afterPath="$PROJECT_DIR$/shop/db.sqlite3" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/shop/terminal/static/css/styles.css" beforeDir="false" afterPath="$PROJECT_DIR$/shop/terminal/static/css/styles.css" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/shop/terminal/static/terminal/terminal.js" beforeDir="false" afterPath="$PROJECT_DIR$/shop/terminal/static/terminal/terminal.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/shop/terminal/templates/terminal/step5_confirmation.html" beforeDir="false" afterPath="$PROJECT_DIR$/shop/terminal/templates/terminal/step5_confirmation.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/shop/terminal/admin.py" beforeDir="false" afterPath="$PROJECT_DIR$/shop/terminal/admin.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/shop/terminal/models.py" beforeDir="false" afterPath="$PROJECT_DIR$/shop/terminal/models.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/shop/terminal/static/css/styles.css" beforeDir="false" afterPath="$PROJECT_DIR$/shop/terminal/static/terminal/css/styles.css" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/shop/terminal/static/terminal/terminal.js" beforeDir="false" afterPath="$PROJECT_DIR$/shop/terminal/static/terminal/terminal/terminal.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/shop/terminal/templates/terminal/base.html" beforeDir="false" afterPath="$PROJECT_DIR$/shop/terminal/templates/terminal/base.html" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/shop/terminal/templates/terminal/success_screen.html" beforeDir="false" afterPath="$PROJECT_DIR$/shop/terminal/templates/terminal/success_screen.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/shop/terminal/templates/terminal/terminal.html" beforeDir="false" afterPath="$PROJECT_DIR$/shop/terminal/templates/terminal/terminal.html" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/shop/terminal/urls.py" beforeDir="false" afterPath="$PROJECT_DIR$/shop/terminal/urls.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/shop/terminal/views.py" beforeDir="false" afterPath="$PROJECT_DIR$/shop/terminal/views.py" afterDir="false" />
     </list>
@@ -76,6 +91,7 @@
       <recent name="C:\Users\MSI Katana\PycharmProjects\crm\.venv\shop\terminal\templates" />
     </key>
     <key name="MoveFile.RECENT_KEYS">
+      <recent name="C:\Users\vadim\PycharmProjects\tce-reggie\crm\shop\terminal\static\order" />
       <recent name="C:\Users\vadim\PycharmProjects\tce-reggie\crm\shop\terminal\templates\terminal" />
       <recent name="C:\Users\vadim\PycharmProjects\tce-reggie\crm\shop\terminal\templates" />
     </key>

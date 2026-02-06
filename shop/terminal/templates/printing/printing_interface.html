@@ -1,0 +1,32 @@
+{% extends "printing/printing.html" %}
+{% load static %}
+
+{% block content %}
+<div class="printing-interface">
+    <h2>Интерфейс печати заказов</h2>
+
+    <div class="print-instructions">
+        <h4>📋 Инструкция по работе:</h4>
+        <ul>
+            <li>Нажмите "Взять новый заказ" чтобы получить задание на печать</li>
+            <li>Просмотрите информацию о заказе и принтах</li>
+            <li>Используйте вкладки для переключения между зонами печати</li>
+            <li>Проверьте правильность расположения всех принтов</li>
+            <li>Нажмите "Заказ напечатан" после выполнения печати</li>
+            <li>Используйте "Вернуть заказ" если есть проблемы с печатью</li>
+        </ul>
+    </div>
+
+    <div id="currentOrderContainer" class="loading">
+        <!-- Здесь будет отображаться текущий заказ -->
+    </div>
+
+    <div id="controls" style="margin-top: 20px; text-align: center;">
+        <button id="newOrderBtn" class="btn-primary" onclick="loadNewOrder()">
+            🆕 Взять новый заказ
+        </button>
+    </div>
+
+    <div id="statusMessage" style="margin-top: 20px; text-align: center;"></div>
+</div>
+{% endblock %}

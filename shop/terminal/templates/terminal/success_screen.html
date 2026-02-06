@@ -1,15 +1,34 @@
-<!-- В success_screen.html -->
+<!-- success_screen.html -->
 <div id="successScreen" style="display: none;">
-    <div class="success-message">ЗАКАЗ УСПЕШНО СОХРАНЕН!</div>
+    <div class="success-container">
+        <div class="success-frame">
 
-    <div class="order-number" id="orderNumberDisplay">000000</div>
+            <!-- Верхняя часть с заголовком -->
+            <div class="success-header">
+                <div class="success-title">ЗАКАЗ СФОРМИРОВАН</div>
+            </div>
 
-    <div class="success-note">
-        Сфотографируйте или запомните номер заказа<br>
-        и подойдите на ресепшен
+            <!-- Сообщение -->
+            <div class="success-message">
+                Сфотографируйте номер заказа и подойдите на ресепшен для оплаты
+            </div>
+
+            <!-- Номер заказа -->
+            <div class="order-number-wrapper">
+                <div class="order-number-label"></div>
+                <div class="order-number" id="orderNumberDisplay">000000</div>
+            </div>
+
+            <!-- Разделительная линия -->
+            <div class="divider"></div>
+
+            <!-- Кнопка нового заказа -->
+            <div class="success-button-wrapper">
+                <button class="success-button" id="newOrderBtn" onclick="startNewOrder()">
+                    НОВЫЙ ЗАКАЗ
+                </button>
+            </div>
+
+        </div>
     </div>
-
-    <button class="nav-btn confirm" id="newOrderBtn" onclick="startNewOrder()">
-        НОВЫЙ ЗАКАЗ
-    </button>
 </div>

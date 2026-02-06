@@ -1,5 +1,6 @@
 import os
 from django.db import models
+from django.utils import timezone
 
 
 # Таблица 1 - Список пользователей и интерфейсов
@@ -7,7 +8,8 @@ class User(models.Model):
     INTERFACE_CHOICES = [
         ('terminal', 'Терминал заказов'),
         ('reception', 'Ресепшен'),
-        ('production', 'Производство'),
+        ('composing', 'Сборка'),
+        ('printing','Печать'),
         ('admin', 'Администратор'),
     ]
 
@@ -51,17 +53,16 @@ class User(models.Model):
         interface_urls = {
             'terminal': 'terminal_interface',
             'reception': 'reception_interface',
-            'production': 'production_interface',
+            'composing': 'composing_interface',
+            'printing': 'printing_interface',
             'admin': 'admin_interface',
         }
         return interface_urls.get(self.interface, 'login')
 
     def set_password(self, raw_password):
-        """Установка пароля (можно добавить хэширование)"""
         self.password = make_password(raw_password)
 
     def check_password(self, raw_password):
-        """Проверка пароля"""
         return check_password(raw_password, self.password)
 
 # Таблица 2 - Промокоды
@@ -156,7 +157,10 @@ class PrintDesign(models.Model):
 class Order(models.Model):
     STATUS_CHOICES = [
         ('new', 'Новый'),
+        ('confirmed', 'Подтвержден'),
         ('in_progress', 'В работе'),
+        ('composed','Собран'),
+        ('printing', 'Печатается'),
         ('printed', 'Напечатан'),
         ('ready', 'Готов к выдаче'),
         ('completed', 'Выдан'),
@@ -199,3 +203,198 @@ class ReadyForDelivery(models.Model):
 
     def __str__(self):
         return f"Готов к выдаче: {self.order}"
+
+#==========================
+#COMPOSING INTERFACE
+#==========================
+
+# Таблица 9 - Отслеживание работы сотрудников над заказами
+class OrderAssignment(models.Model):
+    """Назначение заказов сотрудникам"""
+    assignment_id = models.AutoField(primary_key=True, verbose_name='ID назначения')
+
+    order = models.ForeignKey(
+        Order,
+        on_delete=models.CASCADE,
+        verbose_name='Заказ',
+        related_name='assignments'
+    )
+
+    worker = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        verbose_name='Сотрудник',
+        related_name='assigned_orders'
+    )
+
+    interface = models.CharField(
+        max_length=20,
+        choices=User.INTERFACE_CHOICES,
+        verbose_name='Интерфейс работы'
+    )
+
+    status = models.CharField(
+        max_length=20,
+        choices=[
+            ('in_progress', 'В работе'),
+            ('completed', 'Завершен'),
+            ('cancelled', 'Отменен'),
+        ],
+        default='in_progress',
+        verbose_name='Статус выполнения'
+    )
+
+    started_at = models.DateTimeField(
+        auto_now_add=True,
+        verbose_name='Время начала работы'
+    )
+
+    finished_at = models.DateTimeField(  # Переименовано и объединено
+        null=True,
+        blank=True,
+        verbose_name='Время завершения/отмены'
+    )
+
+    notes = models.TextField(
+        blank=True,
+        null=True,
+        verbose_name='Примечания (причина отмены и т.д.)'
+    )
+
+    class Meta:
+        verbose_name = 'Назначение заказа'
+        verbose_name_plural = 'Назначения заказов'
+        # Уникальная комбинация заказа и сотрудника в активном статусе
+        constraints = [
+            models.UniqueConstraint(
+                fields=['order', 'worker'],
+                condition=models.Q(status='in_progress'),
+                name='unique_active_assignment'
+            )
+        ]
+        ordering = ['-started_at']
+
+    def __str__(self):
+        return f"Заказ #{self.order.order_id} → {self.worker.employee_name} ({self.get_interface_display()})"
+
+    def complete_work(self):
+        """Завершить работу успешно"""
+        self.status = 'completed'
+        self.finished_at = timezone.now()
+        self.save()
+
+    def cancel_work(self, notes=None):
+        """Отменить работу"""
+        self.status = 'cancelled'
+        self.finished_at = timezone.now()
+        if notes:
+            self.notes = notes
+        self.save()
+
+    def is_active(self):
+        """Проверка, активна ли работа"""
+        return self.status == 'in_progress'
+
+    def get_duration(self):
+        """Получить продолжительность работы (в минутах)"""
+        if not self.finished_at:
+            return None
+
+        duration = self.finished_at - self.started_at
+        return duration.total_seconds() / 60  # В минутах
+
+
+# Таблицы мероприятий для админки
+
+class EventsList(models.Model):
+    """
+    Таблица мероприятий
+    - EventName - уникальное название мероприятия
+    - IsActive - флаг активности (только одно мероприятие может быть активным)
+    """
+    event_name = models.CharField(
+        max_length=100,
+        unique=True,
+        verbose_name='Название мероприятия'
+    )
+    is_active = models.BooleanField(
+        default=False,
+        verbose_name='Активно',
+        help_text='Только одно мероприятие может быть активным'
+    )
+
+    class Meta:
+        verbose_name = 'Мероприятие'
+        verbose_name_plural = 'Мероприятия'
+        ordering = ['event_name']
+
+    def __str__(self):
+        return f"{self.event_name} {'(Активно)' if self.is_active else ''}"
+
+    def save(self, *args, **kwargs):
+        """
+        Переопределяем сохранение, чтобы гарантировать,
+        что только одно мероприятие может быть активным
+        """
+        if self.is_active:
+            # Если текущее мероприятие становится активным,
+            # деактивируем все остальные
+            EventsList.objects.filter(is_active=True).exclude(pk=self.pk).update(is_active=False)
+        super().save(*args, **kwargs)
+
+
+class EventsProducts(models.Model):
+    """
+    Таблица товаров доступных на мероприятиях
+    - Связывает мероприятия с доступными товарами
+    - Одно мероприятие может иметь много товаров
+    """
+    event = models.ForeignKey(
+        EventsList,
+        on_delete=models.CASCADE,
+        verbose_name='Мероприятие',
+        related_name='available_products'
+    )
+    product = models.ForeignKey(
+        Product,
+        on_delete=models.CASCADE,
+        verbose_name='Товар',
+        related_name='events'
+    )
+
+    class Meta:
+        verbose_name = 'Товар мероприятия'
+        verbose_name_plural = 'Товары мероприятий'
+        # Уникальная комбинация мероприятия и товара
+        unique_together = ['event', 'product']
+        ordering = ['event', 'product']
+
+    def __str__(self):
+        return f"{self.event.event_name} - {self.product.model} ({self.product.color})"
+
+class EventsPrints(models.Model):
+    """
+    Таблица принтов доступных на мероприятиях
+    - Связывает мероприятия с доступными принтами
+    - Одно мероприятие может иметь много принтов
+    """
+    event = models.ForeignKey(
+        EventsList,
+        on_delete=models.CASCADE,
+        verbose_name='Мероприятие',
+        related_name='available_prints'
+    )
+    print_design = models.ForeignKey(
+        PrintDesign,
+        on_delete=models.CASCADE,
+        verbose_name='Принт',
+        related_name='events'
+    )
+    class Meta:
+        verbose_name = 'Принт мероприятия'
+        verbose_name_plural = 'Принты мероприятий'
+        unique_together = ['event', 'print_design']
+        ordering = ['event', 'print_design']
+
+    def __str__(self):
+        return f"{self.event.event_name} - {self.print_design.name}"

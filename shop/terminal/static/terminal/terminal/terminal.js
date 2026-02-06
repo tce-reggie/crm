@@ -578,16 +578,6 @@ function selectSize(id, sizeLabel, productId) {
 // ШАГ 4: ЗОНЫ ПЕЧАТИ И ПРИНТЫ
 // =======================
 
-// Функция обновления данных продукта
-//function updateOrderProductData() {
-//    if (selectedData) {
-//        orderData.productId = selectedData.productId;
-//        orderData.productModel = selectedData.productModel;
-//        orderData.productSize = selectedData.productSize;
-//        orderData.productColor = selectedData.productColor;
-//    }
-//}
-
 // Настраиваем область печати
 function switchArea(areaId, config) {
     console.log('Переключаем зону:', areaId);
@@ -668,7 +658,6 @@ function switchArea(areaId, config) {
     // 5. Обновляем список принтов для этой зоны
     updateCurrentPrintsList();
 }
-
 
 // Создание элемента принта
 function createPrintElement(print) {
@@ -804,7 +793,7 @@ async function loadStep4Data(productId) {
 
     // 3. Загружаем зоны печати для ЭТОГО КОНКРЕТНОГО товара
     await loadPrintAreas(productId);
-    // ^ Здесь productId - ID конкретного товара (например, футболка синяя XL)
+    //  Здесь productId - ID конкретного товара (например, футболка синяя XL)
 }
 
 function clearAllPrints() {
@@ -817,8 +806,13 @@ function clearAllPrints() {
 
 // Загрузка всех принтов
 async function loadPrints() {
+    console.log('=== loadPrints вызывается ===');
+
     const container = document.getElementById('printsGallery');
-    if (!container) return;
+    if (!container) {
+        console.error('Контейнер printsGallery не найден');
+        return;
+    }
 
     // Сохраняем HTML кнопки "Добавить текст"
     const addTextHTML = `
@@ -834,20 +828,38 @@ async function loadPrints() {
     container.innerHTML = addTextHTML + '<div class="loading-message-small">Загрузка принтов...</div>';
 
     try {
+        console.log('Запрашиваю принты по URL:', API_URLS.prints);
         const response = await fetch(API_URLS.prints);
+
+        console.log('Ответ получен, статус:', response.status);
+
+        if (!response.ok) {
+            throw new Error(`HTTP error: ${response.status} ${response.statusText}`);
+        }
+
         const prints = await response.json();
+        console.log('Получены принты:', prints);
+
+        // ВАЖНО: Проверяем, что prints - это массив
+        if (!Array.isArray(prints)) {
+            console.error('API вернул не массив принтов:', prints);
+            throw new Error('Некорректный формат данных');
+        }
 
         // Начинаем с кнопки "Добавить текст"
         let html = addTextHTML;
 
-        if (!prints || prints.length === 0) {
-            html += '<div class="no-prints-message">Нет доступных принтов</div>';
+        if (prints.length === 0) {
+            console.log('Принтов нет, показываю сообщение');
+            html += '<div class="no-prints-message">Принты на мероприятии отсутствуют</div>';
             container.innerHTML = html;
             return;
         }
 
+        console.log(`Добавляю ${prints.length} принтов`);
         // Добавляем обычные принты
         prints.forEach(print => {
+            console.log('Обрабатываю принт:', print.name);
             let iconHtml = '';
             if (print.image_url) {
                 iconHtml = `<img src="${print.image_url}" alt="${print.name}">`;
@@ -868,10 +880,12 @@ async function loadPrints() {
         });
 
         container.innerHTML = html;
+        console.log('Принты успешно загружены');
 
     } catch (error) {
         console.error('Ошибка загрузки принтов:', error);
-        container.innerHTML = addTextHTML + `<div class="error-message">Ошибка загрузки принтов: ${error.message}</div>`;
+        // Показываем сообщение о том, что принтов нет
+        container.innerHTML = addTextHTML + '<div class="no-prints-message">Принты на мероприятии отсутствуют</div>';
     }
 }
 
@@ -1076,6 +1090,7 @@ function hasIntersectionWithAny(printObj, otherPrints, ignorePrint = null) {
 }
 
 // Обновленная функция selectPrint
+// пока тестовый вариант с фиксированным размером всех принтов, нужно исправить чтобы принт был таких же размеров как и его размеров т.е. m * n пикселей!!!!!
 function selectPrint(id, name, imageUrl) {
     if (!currentAreaId || !currentAreaConfig) {
         alert('Сначала выберите зону печати');
@@ -1225,6 +1240,31 @@ function getAllUnsavedPrints() {
     return unsaved;
 }
 
+function getFileExtensionFromUrl(url) {
+    if (!url) return '.jpg';
+
+    try {
+        // Находим последнюю часть URL (имя файла с расширением)
+        const lastPart = url.split('/').pop(); // "НовогодняяШапка.jpg" или "%D0%9D%D0%BE%D0%B2%D0%BE%D0%B3%D0%BE%D0%B4%D0%BD%D1%8F%D1%8F%D0%A8%D0%B0%BF%D0%BA%D0%B0.jpg"
+
+        // Находим расширение (все что после последней точки)
+        const dotIndex = lastPart.lastIndexOf('.');
+
+        if (dotIndex > 0 && dotIndex < lastPart.length - 1) {
+            // Извлекаем и декодируем только расширение
+            const encodedExtension = lastPart.substring(dotIndex); // ".jpg"
+            return decodeURIComponent(encodedExtension); // ".jpg"
+        }
+
+        // Если точки нет, возвращаем .jpg по умолчанию
+        return '.jpg';
+
+    } catch (error) {
+        console.error('Ошибка извлечения расширения:', error);
+        return '.jpg';
+    }
+}
+
 // Обновление step5Data
 function updateStep5Data(unsavedPrints) {
     console.log('=== updateStep5Data ===');
@@ -1247,7 +1287,10 @@ function updateStep5Data(unsavedPrints) {
                 content = print.name;
             } else if (print.printId) {
                 // Для обычных: "prints/название"
+                const extension = getFileExtensionFromUrl(print.imageUrl);
                 content = `prints/${print.name}`;
+                content = `prints/${print.name}${extension}`;
+                //content = print.imageUrl.replace('/media/', '');
             } else {
                 // Запасной вариант
                 content = print.name;
@@ -1691,8 +1734,15 @@ function updatePrintsDisplay() {
         html += `<strong style="color: #FF9800;">${zoneName}:</strong><br>`;
 
         prints.forEach(print => {
-            const name = print.content.replace('prints/', '');
-            html += `<div style="color: white; padding: 5px 0 5px 15px;">• ${name}</div>`;
+        let name;
+        if (print.content.startsWith('prints/')) {
+            // Это изображение: убираем "prints/" и расширение
+            name = print.content.replace('prints/', '').replace(/\.[^/.]+$/, '');
+        } else {
+            // Это текстовая надпись: оставляем как есть
+            name = print.content;
+        }
+        html += `<div style="color: white; padding: 5px 0 5px 15px;">• ${name}</div>`;
         });
 
         html += `</div>`;
@@ -1701,28 +1751,6 @@ function updatePrintsDisplay() {
     printsContainer.innerHTML = html;
     console.log('Принты отображены');
 }
-
-// Функция для получения названия зоны по ID
-// вроде как не используется, а используется предыдущая 'простая' версия
-//function getAreaNameById(areaId) {
-//    try {
-//        // Ищем вкладку с таким data-area-id среди всех вкладок зон
-//        const allTabs = document.querySelectorAll('.area-tab');
-//        for (let tab of allTabs) {
-//            if (tab.dataset.areaId == areaId) {
-//                return tab.textContent.trim();
-//            }
-//        }
-//
-//        // Если вкладка не найдена в текущем DOM, пробуем найти в сохраненных данных
-//        console.log(`Вкладка для зоны ${areaId} не найдена в DOM`);
-//        return null;
-//
-//    } catch (error) {
-//        console.error('Ошибка при получении названия зоны:', error);
-//        return null;
-//    }
-//}
 
 // Функция оформления заказа
 async function createOrder() {
@@ -1778,7 +1806,7 @@ async function createOrder() {
         submitBtn.innerHTML = 'СОХРАНЯЕМ...';
         submitBtn.disabled = true;
 
-        // 6. Отправляем на сервер с таймаутом (оставляем твою реализацию)
+        // 6. Отправляем на сервер с таймаутом
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), 10000);
 
@@ -2002,16 +2030,6 @@ function getCSRFToken() {
     return cookieValue;
 }
 
-//// Вспомогательная функция для установки текста в элемент
-//function setText(elementId, text) {
-//    const element = document.getElementById(elementId);
-//    if (element) {
-//        element.textContent = text;
-//    } else {
-//        console.log(`Элемент #${elementId} не найден`);
-//    }
-//}
-
 // Инициализация при загрузке страницы
 document.addEventListener('DOMContentLoaded', function() {
     console.log('DOM загружен, инициализирую...');
@@ -2117,7 +2135,7 @@ async function checkPromocode() {
     }
 }
 
-// Функция для сообщений (убедись, что она есть)
+// Функция для сообщений
 function showPromocodeMessage(text, type = 'info') {
     const messageEl = document.getElementById('promocodeMessage');
     if (!messageEl) {
@@ -2179,7 +2197,7 @@ function removePromocode() {
     console.log('Промокод удалён');
 }
 
-// Расчёт скидки (процентная)
+// Расчёт скидки
 function calculateDiscount(basePrice) {
     if (!appliedPromocode || !basePrice) return 0;
 

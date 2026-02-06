@@ -1,0 +1,36 @@
+{% extends "reception/reception.html" %}
+{% load static %}
+
+{% block content %}
+<div class="reception-interface">
+    <h2>Управление заказами</h2>
+
+    <!-- Панель управления -->
+    <div class="controls">
+        <input
+            type="text"
+            id="searchInput"
+            class="search-input"
+            placeholder="🔍 Поиск по номеру, имени, телефону..."
+        >
+
+        <select id="statusFilter" class="status-filter">
+            <option value="new">Новые заказы</option>
+            <option value="confirmed">Подтвержденные</option>
+            <option value="all">Все заказы</option>
+            <option value="cancelled">Отмененные</option>
+        </select>
+
+        <button class="action-btn btn-refresh" onclick="loadOrders()">
+            🔄 Обновить
+        </button>
+    </div>
+
+    <!-- Таблица заказов -->
+    <div id="ordersContainer">
+        <div class="loading">
+            <p>Загрузка заказов...</p>
+        </div>
+    </div>
+</div>
+{% endblock %}
