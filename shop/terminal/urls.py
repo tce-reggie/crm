@@ -53,4 +53,9 @@ urlpatterns = [
     path('api/scoreboard/data/', views.api_scoreboard_data, name='api_scoreboard_data'),
     path('scoreboard/', views.scoreboard_interface, name='scoreboard'),
 
+# Выдача (Delivery)
+path('delivery/', views.delivery_interface, name='delivery_interface'),
+path('api/delivery/orders/', views.api_delivery_orders, name='api_delivery_orders'),
+path('api/delivery/orders/<int:order_id>/complete/', views.api_delivery_complete_order, name='api_delivery_complete'),
+
 ]

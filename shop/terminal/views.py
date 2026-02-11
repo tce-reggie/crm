@@ -1440,3 +1440,140 @@ def scoreboard_interface(request):
     return render(request, 'scoreboard/scoreboard.html', {
         'userlogin': request.session.get('login'),
     })
+
+
+# =========================
+# DELIVERY (ВЫДАЧА) API ENDPOINTS
+# =========================
+
+@interface_required('delivery')
+def delivery_interface(request):
+    """Главный интерфейс выдачи"""
+    return render(request, 'delivery/delivery_interface.html', {
+        'userlogin': request.session.get('login'),
+    })
+
+
+@csrf_exempt
+def api_delivery_orders(request):
+    """Получение заказов для выдачи (статус 'printed')"""
+    try:
+        print("=== API_DELIVERY_ORDERS ===")
+
+        # Получаем параметры поиска
+        search_query = request.GET.get('search', '').strip()
+
+        # Базовый запрос - заказы со статусом 'printed' (Напечатан)
+        orders = Order.objects.filter(
+            status='printed'
+        ).select_related('product').order_by('-created_date')
+
+        # Поиск
+        if search_query:
+            from django.db.models import Q
+
+            conditions = Q()
+            conditions |= Q(customer_name__icontains=search_query)
+            conditions |= Q(phone_number__icontains=search_query)
+
+            # Поиск по номеру заказа (ORDxxxxxx)
+            try:
+                if search_query.isdigit():
+                    conditions |= Q(order_id=int(search_query))
+                elif search_query.upper().startswith('ORD'):
+                    num_part = search_query[3:].strip()
+                    if num_part.isdigit():
+                        conditions |= Q(order_id=int(num_part))
+            except (ValueError, IndexError):
+                pass
+
+            orders = orders.filter(conditions)
+
+        # Формируем ответ
+        orders_data = []
+        for order in orders:
+            # Получаем информацию о том, кто печатал заказ
+            printing_assignment = OrderAssignment.objects.filter(
+                order=order,
+                interface='print',
+                status='completed'
+            ).first()
+
+            orders_data.append({
+                'id': order.order_id,
+                'order_number': f"ORD{order.order_id:06d}",
+                'customer_name': order.customer_name,
+                'phone_number': order.phone_number,
+                'status': order.status,
+                'status_display': 'Готов к выдаче',  # Показываем как "Готов к выдаче"
+                'created_date': order.created_date.strftime('%d.%m.%Y %H:%M'),
+                'product': {
+                    'model': order.product.model,
+                    'color': order.product.color,
+                    'size': order.product.size,
+                },
+                'printed_by': printing_assignment.worker.employee_name if printing_assignment else 'Неизвестно',
+            })
+
+        return JsonResponse({
+            'success': True,
+            'orders': orders_data,
+            'count': len(orders_data),
+        })
+
+    except Exception as e:
+        print(f"ОШИБКА api_delivery_orders: {str(e)}")
+        return JsonResponse({
+            'success': False,
+            'error': str(e)
+        }, status=500)
+
+
+@csrf_exempt
+@require_POST
+def api_delivery_complete_order(request, order_id):
+    """Выдача заказа клиенту (меняет статус с 'printed' на 'done')"""
+    try:
+        user_id = request.session.get('user_id')
+        if not user_id:
+            return JsonResponse({'success': False, 'error': 'Не авторизован'})
+
+        user = User.objects.get(id=user_id)
+        order = get_object_or_404(Order, order_id=order_id)
+
+        # Проверяем, можно ли выдать заказ (только статус 'printed')
+        if order.status != 'printed':
+            return JsonResponse({
+                'success': False,
+                'error': f'Заказ нельзя выдать. Текущий статус: {order.get_status_display()}. Должен быть "Напечатан".'
+            }, status=400)
+
+        with transaction.atomic():
+            # Меняем статус заказа на 'done' (Завершен)
+            order.status = 'done'
+            order.save()
+
+            # Создаем запись в OrderAssignment о выдаче
+            assignment = OrderAssignment.objects.create(
+                order=order,
+                worker=user,
+                interface='delivery',
+                status='completed',  # Сразу завершен
+                notes=f"Заказ выдан клиенту. Время выдачи: {timezone.now().strftime('%d.%m.%Y %H:%M')}"
+            )
+
+            print(f"Заказ #{order_id} выдан клиенту сотрудником {user.employee_name}")
+
+        return JsonResponse({
+            'success': True,
+            'message': 'Заказ успешно выдан',
+            'new_status': order.status,
+            'new_status_display': order.get_status_display()
+        })
+
+    except Exception as e:
+        print(f"ERROR api_delivery_complete_order: {str(e)}")
+        return JsonResponse({
+            'success': False,
+            'error': str(e)
+        }, status=500)

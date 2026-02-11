@@ -1,0 +1,29 @@
+{% extends "delivery/delivery.html" %}
+{% load static %}
+
+{% block content %}
+<div class="delivery-interface">
+    <h2>Заказы, готовые к выдаче</h2>
+
+    <!-- Панель управления -->
+    <div class="controls">
+        <input
+            type="text"
+            id="searchInput"
+            class="search-input"
+            placeholder="🔍 Поиск по номеру заказа, имени или телефону..."
+            autofocus
+        >
+        <button class="action-btn btn-refresh" onclick="loadOrders()" style="background: #3498db; color: white;">
+            🔄 Обновить
+        </button>
+    </div>
+
+    <!-- Таблица заказов -->
+    <div id="ordersContainer">
+        <div class="loading">
+            <p>Загрузка заказов...</p>
+        </div>
+    </div>
+</div>
+{% endblock %}
