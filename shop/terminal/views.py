@@ -1379,3 +1379,64 @@ def api_printing_get_zone_image(request):
             'success': False,
             'error': str(e)
         })
+
+
+# =========================
+# ТАБЛО API ENDPOINTS
+# =========================
+
+@csrf_exempt
+def api_scoreboard_data(request):
+    """Возвращает данные для табло: заказы в работе и готовые к выдаче"""
+    try:
+        # ЗАКАЗЫ В РАБОТЕ (printing) - через OrderAssignment
+        in_progress_assignments = OrderAssignment.objects.filter(
+            status='in_progress',
+            interface='print'  # Только печатники
+        ).select_related('order', 'order__product').order_by('started_at')[:10]
+
+        in_progress_data = []
+        for assignment in in_progress_assignments:
+            order = assignment.order
+            in_progress_data.append({
+                'number': f"ORD{order.order_id:06d}",
+                'id': order.order_id,
+                'product': f"{order.product.model} {order.product.color} {order.product.size}",
+                'customer': order.customer_name,
+                'worker': assignment.worker.employee_name if assignment.worker else 'Неизвестно',
+                'started': assignment.started_at.strftime('%H:%M') if assignment.started_at else '',
+            })
+
+        # ГОТОВЫЕ ЗАКАЗЫ (printed) - напрямую из Order
+        ready_orders = Order.objects.filter(
+            status='printed'  # Статус "Напечатан"
+        ).select_related('product').order_by('-created_date')[:10]
+
+        ready_data = []
+        for order in ready_orders:
+            ready_data.append({
+                'number': f"ORD{order.order_id:06d}",
+                'id': order.order_id,
+                'product': f"{order.product.model} {order.product.color} {order.product.size}",
+                'customer': order.customer_name,
+            })
+
+        return JsonResponse({
+            'success': True,
+            'in_progress': in_progress_data,
+            'ready': ready_data,
+        })
+
+    except Exception as e:
+        print(f"ERROR api_scoreboard_data: {str(e)}")
+        return JsonResponse({
+            'success': False,
+            'error': str(e)
+        }, status=500)
+
+
+@interface_required('scoreboard')
+def scoreboard_interface(request):
+    return render(request, 'scoreboard/scoreboard.html', {
+        'userlogin': request.session.get('login'),
+    })

@@ -1,5 +1,6 @@
 # terminal/urls.py
 from django.urls import path
+from django.shortcuts import render
 from . import views
 
 urlpatterns = [
@@ -47,4 +48,9 @@ urlpatterns = [
     path('api/printing/orders/<int:order_id>/complete/', views.api_printing_complete_order, name='api_printing_complete'),
     path('api/printing/orders/<int:order_id>/cancel/', views.api_printing_cancel_order, name='api_printing_cancel'),
     path('api/printing/zone-image/', views.api_printing_get_zone_image, name='api_printing_zone_image'),
+
+    # Табло
+    path('api/scoreboard/data/', views.api_scoreboard_data, name='api_scoreboard_data'),
+    path('scoreboard/', views.scoreboard_interface, name='scoreboard'),
+
 ]

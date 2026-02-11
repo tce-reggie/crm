@@ -11,6 +11,7 @@ class User(models.Model):
         ('composing', 'Сборка'),
         ('printing','Печать'),
         ('admin', 'Администратор'),
+        ('scoreboard', 'Табло'),
     ]
 
     login = models.CharField(
@@ -56,6 +57,7 @@ class User(models.Model):
             'composing': 'composing_interface',
             'printing': 'printing_interface',
             'admin': 'admin_interface',
+            'scoreboard': 'scoreboard',
         }
         return interface_urls.get(self.interface, 'login')
 

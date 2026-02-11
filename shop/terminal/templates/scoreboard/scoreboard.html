@@ -1,0 +1,202 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Табло заказов</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Arial Black', 'Impact', sans-serif;
+            background: #1a1a2e;
+            color: white;
+            padding: 20px;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        h1 {
+            text-align: center;
+            font-size: 48px;
+            margin-bottom: 30px;
+            color: #fff;
+            text-shadow: 0 0 10px #00ffff;
+        }
+
+        .scoreboard {
+            display: flex;
+            gap: 20px;
+            flex: 1;
+        }
+
+        .column {
+            flex: 1;
+            background: #16213e;
+            border-radius: 20px;
+            padding: 20px;
+            box-shadow: 0 0 20px rgba(0,0,0,0.5);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .column-header {
+            font-size: 36px;
+            font-weight: bold;
+            text-align: center;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+
+        .in-progress .column-header {
+            background: #e94560;
+            text-shadow: 0 0 5px #ff0000;
+        }
+
+        .ready .column-header {
+            background: #0f3460;
+            text-shadow: 0 0 5px #00ff00;
+        }
+
+        .orders-list {
+            list-style: none;
+            flex: 1;
+            overflow-y: auto;
+        }
+
+        .order-item {
+            background: rgba(255,255,255,0.1);
+            margin-bottom: 15px;
+            padding: 20px;
+            border-radius: 10px;
+            font-size: 28px;
+            font-weight: bold;
+            text-align: center;
+            border-left: 10px solid #e94560;
+            transition: 0.3s;
+        }
+
+        .ready .order-item {
+            border-left-color: #0f3460;
+        }
+
+        .order-number {
+            font-size: 32px;
+            margin-bottom: 5px;
+        }
+
+        .order-details {
+            font-size: 18px;
+            color: #aaa;
+            font-weight: normal;
+        }
+
+        .empty-message {
+            text-align: center;
+            font-size: 24px;
+            color: #666;
+            padding: 40px;
+            font-style: italic;
+        }
+
+        .timestamp {
+            text-align: right;
+            color: #666;
+            margin-top: 20px;
+            font-size: 18px;
+        }
+
+        @media (max-width: 1200px) {
+            h1 { font-size: 36px; }
+            .column-header { font-size: 28px; }
+            .order-number { font-size: 24px; }
+            .order-item { font-size: 20px; }
+        }
+    </style>
+</head>
+<body>
+    <h1>🚀 СТАТУС ЗАКАЗОВ</h1>
+
+    <div class="scoreboard">
+        <div class="column in-progress">
+            <div class="column-header">
+                ⚡ В РАБОТЕ
+            </div>
+            <div id="inProgressList" class="orders-list">
+                <div class="empty-message">Загрузка...</div>
+            </div>
+        </div>
+
+        <div class="column ready">
+            <div class="column-header">
+                ✅ ГОТОВЫ
+            </div>
+            <div id="readyList" class="orders-list">
+                <div class="empty-message">Загрузка...</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="timestamp" id="timestamp"></div>
+
+    <script>
+        async function loadScoreboard() {
+            try {
+                const response = await fetch('/api/scoreboard/data/');
+                const data = await response.json();
+
+                if (!data.success) {
+                    console.error('Ошибка загрузки:', data.error);
+                    return;
+                }
+
+                // Отрисовка заказов в работе
+                const inProgressList = document.getElementById('inProgressList');
+                if (data.in_progress.length === 0) {
+                    inProgressList.innerHTML = '<div class="empty-message">✨ Нет заказов в работе</div>';
+                } else {
+                    inProgressList.innerHTML = data.in_progress.map(order => `
+                        <div class="order-item">
+                            <div class="order-number">${order.number}</div>
+                            <div class="order-details">${order.product}</div>
+                        </div>
+                    `).join('');
+                }
+
+                // Отрисовка готовых заказов
+                const readyList = document.getElementById('readyList');
+                if (data.ready.length === 0) {
+                    readyList.innerHTML = '<div class="empty-message">📦 Нет готовых заказов</div>';
+                } else {
+                    readyList.innerHTML = data.ready.map(order => `
+                        <div class="order-item">
+                            <div class="order-number">${order.number}</div>
+                            <div class="order-details">${order.customer}</div>
+                        </div>
+                    `).join('');
+                }
+
+                // Время обновления
+                document.getElementById('timestamp').innerHTML =
+                    `🕐 Обновлено: ${new Date().toLocaleTimeString('ru-RU')}`;
+
+            } catch (error) {
+                console.error('Ошибка:', error);
+            }
+        }
+
+        // Загружаем сразу
+        loadScoreboard();
+
+        // Обновляем каждые 10 секунд
+        setInterval(loadScoreboard, 10000);
+    </script>
+</body>
+</html>
