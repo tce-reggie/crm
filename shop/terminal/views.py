@@ -1393,7 +1393,7 @@ def api_scoreboard_data(request):
         in_progress_assignments = OrderAssignment.objects.filter(
             status='in_progress',
             interface='print'  # Только печатники
-        ).select_related('order', 'order__product').order_by('started_at')[:10]
+        ).select_related('order', 'order__product', 'worker').order_by('started_at')[:10]
 
         in_progress_data = []
         for assignment in in_progress_assignments:
@@ -1402,7 +1402,7 @@ def api_scoreboard_data(request):
                 'number': f"ORD{order.order_id:06d}",
                 'id': order.order_id,
                 'product': f"{order.product.model} {order.product.color} {order.product.size}",
-                'customer': order.customer_name,
+                'customer': order.customer_name,  # Добавляем имя клиента
                 'worker': assignment.worker.employee_name if assignment.worker else 'Неизвестно',
                 'started': assignment.started_at.strftime('%H:%M') if assignment.started_at else '',
             })

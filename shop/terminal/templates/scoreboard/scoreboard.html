@@ -146,7 +146,7 @@
 
     <div class="timestamp" id="timestamp"></div>
 
-    <script>
+        <script>
         async function loadScoreboard() {
             try {
                 const response = await fetch('/api/scoreboard/data/');
@@ -165,7 +165,8 @@
                     inProgressList.innerHTML = data.in_progress.map(order => `
                         <div class="order-item">
                             <div class="order-number">${order.number}</div>
-                            <div class="order-details">${order.product}</div>
+                            <div class="order-details">${order.customer}</div>
+                            <div style="font-size: 16px; color: #ccc; margin-top: 5px;">${order.product}</div>
                         </div>
                     `).join('');
                 }
@@ -179,6 +180,7 @@
                         <div class="order-item">
                             <div class="order-number">${order.number}</div>
                             <div class="order-details">${order.customer}</div>
+                            <div style="font-size: 16px; color: #ccc; margin-top: 5px;">${order.product}</div>
                         </div>
                     `).join('');
                 }

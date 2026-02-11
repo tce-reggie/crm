@@ -5,13 +5,7 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="b03be4f4-a795-4972-b2f7-1611598ce511" name="Changes" comment="исрпавила printing интерфейс(изображаения принтов теперь отображаются и убрала их маштабирование)">
-      <change afterPath="$PROJECT_DIR$/shop/terminal/static/delivery/delivery.js" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/shop/terminal/templates/delivery/delivery.html" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/shop/terminal/templates/delivery/delivery_interface.html" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/shop/db.sqlite3" beforeDir="false" afterPath="$PROJECT_DIR$/shop/db.sqlite3" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/shop/terminal/models.py" beforeDir="false" afterPath="$PROJECT_DIR$/shop/terminal/models.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/shop/terminal/urls.py" beforeDir="false" afterPath="$PROJECT_DIR$/shop/terminal/urls.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/shop/terminal/views.py" beforeDir="false" afterPath="$PROJECT_DIR$/shop/terminal/views.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
