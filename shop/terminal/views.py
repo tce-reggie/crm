@@ -1093,7 +1093,7 @@ def api_printing_get_new_order(request):
                 'prints': [
                     {
                         'id': op.order_print_id,
-                        'content': op.print_design,
+                        'content': op.get_print_display_url() if hasattr(op, 'get_print_display_url') else op.print_design,
                         'area_name': op.area.area_name if op.area else 'Неизвестно',
                         'position_x': float(op.position_x),
                         'position_y': float(op.position_y),
@@ -1158,7 +1158,7 @@ def api_printing_get_new_order(request):
             'prints': [
                 {
                     'id': op.order_print_id,
-                    'content': op.print_design,
+                    'content': op.get_print_display_url() if hasattr(op, 'get_print_display_url') else op.print_design,
                     'area_name': op.area.area_name if op.area else 'Неизвестно',
                     'position_x': float(op.position_x),
                     'position_y': float(op.position_y),
@@ -1222,7 +1222,7 @@ def api_printing_get_current_order(request):
             'prints': [
                 {
                     'id': op.order_print_id,
-                    'content': op.print_design,
+                    'content': op.get_print_display_url() if hasattr(op, 'get_print_display_url') else op.print_design,
                     'area_name': op.area.area_name if op.area else 'Неизвестно',
                     'position_x': float(op.position_x),
                     'position_y': float(op.position_y),

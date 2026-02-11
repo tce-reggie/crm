@@ -161,7 +161,7 @@ async function displayCurrentOrder(order) {
                         <strong>Содержимое:</strong><br>
                         ${printType === 'Текст'
                             ? escapeHtml(print.content)
-                            : `<img src="${print.content}" style="max-width: 100px; max-height: 50px; border: 1px solid #ddd;">`
+                            : `<img src="/media/prints/${print.content.split('/').pop()}" style="max-width: 100px; max-height: 50px; border: 1px solid #ddd;">`
                         }
                     </div>
                     <div style="color: #7f8c8d; font-size: 12px;">
@@ -313,8 +313,8 @@ function positionPrints(areaName) {
         if (isImage) {
             // Для изображений
             printElement.innerHTML = `
-                <img src="${print.content}" class="print-content-image"
-                     style="width: 100px; height: auto;">
+                <img src="/media/prints/${print.content.split('/').pop()}" class="print-content-image"
+                     style="width: auto; height: auto;">
             `;
         } else {
             // Для текста
