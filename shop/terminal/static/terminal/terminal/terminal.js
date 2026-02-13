@@ -14,6 +14,8 @@ const API_URLS = {
 // =======================
 // ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ
 // =======================
+let statusCheckInterval;
+
 let currentStep = 1;
 
 let selectedData = {
@@ -2235,3 +2237,116 @@ function updatePromoDisplay() {
         }
     }
 }
+
+
+// ПРОВЕРКА АКТИВНОСТИ ПОЛЬЗОВАТЕЛЯ
+
+// Запускаем проверку статуса
+function startStatusCheck() {
+    // Проверяем сразу
+    checkUserStatus();
+
+    // Проверяем каждые 10 секунд
+    statusCheckInterval = setInterval(checkUserStatus, 10000);
+}
+
+// Останавливаем проверку
+function stopStatusCheck() {
+    if (statusCheckInterval) {
+        clearInterval(statusCheckInterval);
+        statusCheckInterval = null;
+    }
+}
+
+// Проверка статуса пользователя
+async function checkUserStatus() {
+    try {
+        const response = await fetch('/api/check-user-status/');
+        const data = await response.json();
+
+        if (data.success && !data.is_active) {
+            // Аккаунт деактивирован - показываем сообщение
+            showPauseMessage();
+        }
+    } catch (error) {
+        console.error('Ошибка проверки статуса:', error);
+    }
+}
+
+// Показать сообщение о паузе
+function showPauseMessage() {
+    console.log('Аккаунт деактивирован');
+
+    // Останавливаем проверку
+    stopStatusCheck();
+
+    // Проверяем, нет ли уже оверлея
+    if (document.getElementById('pauseOverlay')) {
+        return;
+    }
+
+    // Создаем затемнение
+    const overlay = document.createElement('div');
+    overlay.id = 'pauseOverlay';
+    overlay.style.cssText = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0,0,0,0.9);
+        z-index: 10000;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    `;
+
+    // Создаем сообщение
+    const messageBox = document.createElement('div');
+    messageBox.style.cssText = `
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 40px;
+        border-radius: 20px;
+        text-align: center;
+        max-width: 400px;
+        box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+    `;
+
+    messageBox.innerHTML = `
+        <div style="font-size: 80px; margin-bottom: 20px;">⏸️</div>
+        <h2 style="font-size: 28px; margin-bottom: 15px;">Работа приостановлена</h2>
+        <p style="font-size: 16px; margin-bottom: 10px;">Ваш аккаунт был деактивирован администратором.</p>
+        <p style="font-size: 14px; opacity: 0.8;">Страница обновится автоматически после активации.</p>
+    `;
+
+    overlay.appendChild(messageBox);
+    document.body.appendChild(overlay);
+
+    // Проверяем статус каждые 5 секунд для возобновления
+    const resumeCheck = setInterval(async () => {
+        try {
+            const response = await fetch('/api/check-user-status/');
+            const data = await response.json();
+
+            if (data.success && data.is_active) {
+                console.log('Аккаунт снова активен, перезагружаем...');
+                clearInterval(resumeCheck);
+                window.location.reload();
+            }
+        } catch (error) {
+            console.error('Ошибка проверки статуса:', error);
+        }
+    }, 5000);
+}
+
+// Инициализация при загрузке страницы
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('Терминал загружен');
+    startStatusCheck();
+});
+
+// Очищаем интервал при выгрузке страницы
+window.addEventListener('beforeunload', function() {
+    stopStatusCheck();
+});

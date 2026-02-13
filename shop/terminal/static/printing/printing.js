@@ -620,6 +620,8 @@ async function checkUserStatus() {
         const response = await fetch('/api/check-user-status/');
         const data = await response.json();
 
+        console.log('Проверка статуса:', data);
+
         if (data.success && !data.is_active) {
             // Аккаунт деактивирован - показываем сообщение
             showPauseMessage();
@@ -630,13 +632,23 @@ async function checkUserStatus() {
 }
 
 function showPauseMessage() {
-    // Останавливаем таймер неактивности
-    clearTimeout(inactivityTimer);
-    // Останавливаем проверку статуса
-    clearInterval(statusCheckInterval);
+    console.log('Аккаунт деактивирован, показываем сообщение...');
+
+    // Убираем вызов clearTimeout(inactivityTimer) - его нет в этом файле
+    // Просто останавливаем проверку статуса
+    if (statusCheckInterval) {
+        clearInterval(statusCheckInterval);
+        statusCheckInterval = null;
+    }
+
+    // Проверяем, нет ли уже оверлея
+    if (document.getElementById('pauseOverlay')) {
+        return;
+    }
 
     // Создаем затемнение
     const overlay = document.createElement('div');
+    overlay.id = 'pauseOverlay';
     overlay.style.cssText = `
         position: fixed;
         top: 0;
@@ -673,21 +685,24 @@ function showPauseMessage() {
         <p style="font-size: 12px;">Обратитесь к администратору для возобновления работы</p>
     `;
 
-    // Добавляем стиль анимации
-    const style = document.createElement('style');
-    style.textContent = `
-        @keyframes pauseAppear {
-            from {
-                transform: scale(0.8);
-                opacity: 0;
+    // Добавляем стиль анимации (только если его еще нет)
+    if (!document.getElementById('pauseAnimationStyle')) {
+        const style = document.createElement('style');
+        style.id = 'pauseAnimationStyle';
+        style.textContent = `
+            @keyframes pauseAppear {
+                from {
+                    transform: scale(0.8);
+                    opacity: 0;
+                }
+                to {
+                    transform: scale(1);
+                    opacity: 1;
+                }
             }
-            to {
-                transform: scale(1);
-                opacity: 1;
-            }
-        }
-    `;
-    document.head.appendChild(style);
+        `;
+        document.head.appendChild(style);
+    }
 
     overlay.appendChild(messageBox);
     document.body.appendChild(overlay);
@@ -699,7 +714,8 @@ function showPauseMessage() {
             const data = await response.json();
 
             if (data.success && data.is_active) {
-                // Аккаунт снова активен - перезагружаем страницу
+                console.log('Аккаунт снова активен, перезагружаем...');
+                clearInterval(resumeCheck);
                 window.location.reload();
             }
         } catch (error) {
