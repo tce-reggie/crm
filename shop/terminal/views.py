@@ -1553,16 +1553,21 @@ def api_delivery_complete_order(request, order_id):
             order.status = 'done'
             order.save()
 
+            current_time = timezone.now()
+
             # Создаем запись в OrderAssignment о выдаче
             assignment = OrderAssignment.objects.create(
                 order=order,
                 worker=user,
                 interface='delivery',
                 status='completed',  # Сразу завершен
-                notes=f"Заказ выдан клиенту. Время выдачи: {timezone.now().strftime('%d.%m.%Y %H:%M')}"
+                started_at=current_time,  # Устанавливаем время начала
+                finished_at=current_time,  # Устанавливаем время окончания (совпадает с началом)
+                notes=f"Заказ выдан клиенту. Время выдачи: {current_time.strftime('%d.%m.%Y %H:%M')}"
             )
 
             print(f"Заказ #{order_id} выдан клиенту сотрудником {user.employee_name}")
+            print(f"Время начала и окончания: {current_time}")
 
         return JsonResponse({
             'success': True,
