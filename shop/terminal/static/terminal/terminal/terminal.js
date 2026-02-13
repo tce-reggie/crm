@@ -2316,7 +2316,7 @@ function showPauseMessage() {
     messageBox.innerHTML = `
         <div style="font-size: 80px; margin-bottom: 20px;">⏸️</div>
         <h2 style="font-size: 28px; margin-bottom: 15px;">Работа приостановлена</h2>
-        <p style="font-size: 16px; margin-bottom: 10px;">Ваш аккаунт был деактивирован администратором.</p>
+        <p style="font-size: 16px; margin-bottom: 10px;">Терминал деактивирован администратором.</p>
         <p style="font-size: 14px; opacity: 0.8;">Страница обновится автоматически после активации.</p>
     `;
 
