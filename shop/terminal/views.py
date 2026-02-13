@@ -1620,3 +1620,869 @@ def api_check_user_status(request):
             'success': False,
             'error': str(e)
         }, status=500)
+
+
+# =========================
+# ADMIN INTERFACE API
+# =========================
+
+@interface_required('admin')
+def admin_interface(request):
+    """Главный интерфейс администратора"""
+    return render(request, 'admin/admin_interface.html', {
+        'userlogin': request.session.get('login'),
+    })
+
+# ================== ЗАКАЗЫ ==================
+
+@csrf_exempt
+def api_admin_orders(request):
+    """Получение всех заказов с фильтрацией"""
+    try:
+        status_filter = request.GET.get('status', '')
+        search_query = request.GET.get('search', '').strip()
+        date_from = request.GET.get('date_from', '')
+        date_to = request.GET.get('date_to', '')
+
+        orders = Order.objects.all().select_related('product', 'promocode').prefetch_related('assignments')
+
+        if status_filter and status_filter != 'all':
+            orders = orders.filter(status=status_filter)
+
+        if search_query:
+            from django.db.models import Q
+            conditions = Q()
+            conditions |= Q(customer_name__icontains=search_query)
+            conditions |= Q(phone_number__icontains=search_query)
+            conditions |= Q(order_id__icontains=search_query if search_query.isdigit() else 0)
+            orders = orders.filter(conditions)
+
+        if date_from:
+            orders = orders.filter(created_date__gte=date_from)
+        if date_to:
+            orders = orders.filter(created_date__lte=date_to)
+
+        orders = orders.order_by('-created_date')
+
+        orders_data = []
+        for order in orders:
+            prints_count = OrderPrint.objects.filter(order=order).count()
+            assignments = order.assignments.all()
+            current_worker = None
+            current_stage = None
+
+            for a in assignments.filter(status='in_progress').first():
+                current_worker = a.worker.employee_name if a.worker else None
+                current_stage = a.get_interface_display() if a.interface else None
+
+            orders_data.append({
+                'id': order.order_id,
+                'order_number': f"ORD{order.order_id:06d}",
+                'customer_name': order.customer_name,
+                'phone_number': order.phone_number,
+                'status': order.status,
+                'status_display': order.get_status_display(),
+                'created_date': order.created_date.strftime('%d.%m.%Y %H:%M'),
+                'product': {
+                    'id': order.product.product_id,
+                    'model': order.product.model,
+                    'color': order.product.color,
+                    'size': order.product.size,
+                },
+                'promocode': order.promocode.code if order.promocode else None,
+                'prints_count': prints_count,
+                'current_worker': current_worker,
+                'current_stage': current_stage,
+            })
+
+        return JsonResponse({
+            'success': True,
+            'orders': orders_data,
+            'count': len(orders_data),
+        })
+
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)}, status=500)
+
+@csrf_exempt
+def api_admin_order_detail(request, order_id):
+    """Детали конкретного заказа"""
+    try:
+        order = get_object_or_404(Order.objects.select_related('product', 'promocode'), order_id=order_id)
+        prints = OrderPrint.objects.filter(order=order).select_related('area')
+        assignments = OrderAssignment.objects.filter(order=order).select_related('worker').order_by('-started_at')
+
+        order_data = {
+            'id': order.order_id,
+            'order_number': f"ORD{order.order_id:06d}",
+            'customer_name': order.customer_name,
+            'phone_number': order.phone_number,
+            'status': order.status,
+            'status_display': order.get_status_display(),
+            'created_date': order.created_date.strftime('%d.%m.%Y %H:%M'),
+            'product': {
+                'id': order.product.product_id,
+                'model': order.product.model,
+                'color': order.product.color,
+                'size': order.product.size,
+            },
+            'promocode': order.promocode.code if order.promocode else None,
+            'discount': float(order.promocode.discount) if order.promocode else 0,
+            'prints': [
+                {
+                    'id': p.order_print_id,
+                    'content': p.print_design,
+                    'area_name': p.area.area_name if p.area else 'Неизвестно',
+                    'position_x': float(p.position_x),
+                    'position_y': float(p.position_y),
+                } for p in prints
+            ],
+            'history': [
+                {
+                    'stage': a.get_interface_display(),
+                    'worker': a.worker.employee_name if a.worker else 'Система',
+                    'status': a.get_status_display(),
+                    'started': a.started_at.strftime('%d.%m.%Y %H:%M'),
+                    'finished': a.finished_at.strftime('%d.%m.%Y %H:%M') if a.finished_at else None,
+                    'duration': round(a.get_duration(), 1) if a.get_duration() else None,
+                    'notes': a.notes,
+                } for a in assignments
+            ]
+        }
+
+        return JsonResponse({'success': True, 'order': order_data})
+
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)}, status=500)
+
+@csrf_exempt
+@require_POST
+def api_admin_update_order_status(request, order_id):
+    """Изменение статуса заказа"""
+    try:
+        data = json.loads(request.body)
+        new_status = data.get('status')
+        reason = data.get('reason', '')
+
+        if not new_status:
+            return JsonResponse({'success': False, 'error': 'Статус не указан'})
+
+        valid_statuses = [s[0] for s in Order.STATUS_CHOICES]
+        if new_status not in valid_statuses:
+            return JsonResponse({'success': False, 'error': 'Неверный статус'})
+
+        order = get_object_or_404(Order, order_id=order_id)
+        old_status = order.status
+        order.status = new_status
+        order.save()
+
+        # Логируем изменение
+        print(f"Администратор изменил статус заказа #{order_id}: {old_status} -> {new_status}. Причина: {reason}")
+
+        return JsonResponse({
+            'success': True,
+            'message': 'Статус обновлен',
+            'new_status': order.status,
+            'new_status_display': order.get_status_display()
+        })
+
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)}, status=500)
+
+@csrf_exempt
+@require_POST
+def api_admin_delete_order(request, order_id):
+    """Удаление заказа"""
+    try:
+        order = get_object_or_404(Order, order_id=order_id)
+        order_number = f"ORD{order.order_id:06d}"
+
+        # Удаляем связанные записи
+        OrderPrint.objects.filter(order=order).delete()
+        OrderAssignment.objects.filter(order=order).delete()
+        order.delete()
+
+        return JsonResponse({
+            'success': True,
+            'message': f'Заказ {order_number} удален'
+        })
+
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)}, status=500)
+
+@csrf_exempt
+@require_POST
+def api_admin_delete_all_orders(request):
+    """Удаление всех заказов"""
+    try:
+        data = json.loads(request.body)
+        keep_prints = data.get('keep_prints', False)  # Сохранять ли нанесения?
+
+        with transaction.atomic():
+            if keep_prints:
+                # Удаляем только заказы, но сохраняем принты? (логика уточняется)
+                OrderPrint.objects.all().delete()
+                OrderAssignment.objects.all().delete()
+                Order.objects.all().delete()
+            else:
+                # Полная очистка
+                OrderPrint.objects.all().delete()
+                OrderAssignment.objects.all().delete()
+                Order.objects.all().delete()
+
+        return JsonResponse({
+            'success': True,
+            'message': 'Все заказы удалены'
+        })
+
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)}, status=500)
+
+@csrf_exempt
+@require_POST
+def api_admin_create_order(request):
+    """Создание заказа администратором"""
+    try:
+        data = json.loads(request.body)
+
+        required = ['customer_name', 'phone_number', 'product_id']
+        for field in required:
+            if not data.get(field):
+                return JsonResponse({'success': False, 'error': f'Поле {field} обязательно'})
+
+        product = get_object_or_404(Product, product_id=data['product_id'])
+
+        with transaction.atomic():
+            order = Order.objects.create(
+                customer_name=data['customer_name'],
+                phone_number=data['phone_number'],
+                product=product,
+                status='new'  # Создаем как новый
+            )
+
+            if data.get('promocode'):
+                try:
+                    promo = PromoCode.objects.get(code=data['promocode'], is_active=True)
+                    order.promocode = promo
+                    order.save()
+                except PromoCode.DoesNotExist:
+                    pass
+
+            # Если нужно сразу изменить статус
+            if data.get('initial_status'):
+                order.status = data['initial_status']
+                order.save()
+
+        return JsonResponse({
+            'success': True,
+            'order_id': order.order_id,
+            'order_number': f"ORD{order.order_id:06d}",
+            'message': 'Заказ создан'
+        })
+
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)}, status=500)
+
+# ================== ИЗДЕЛИЯ ==================
+
+@csrf_exempt
+def api_admin_products(request):
+    """Получение списка всех изделий"""
+    try:
+        products = Product.objects.all().order_by('model', 'color', 'size')
+        products_data = []
+
+        for p in products:
+            # Количество заказов с этим товаром
+            orders_count = Order.objects.filter(product=p).count()
+            # Зоны печати
+            areas_count = ProductPrintArea.objects.filter(product=p).count()
+
+            products_data.append({
+                'id': p.product_id,
+                'model': p.model,
+                'color': p.color,
+                'size': p.size,
+                'quantity': p.quantity,
+                'image': p.image_filename.url if p.image_filename else None,
+                'orders_count': orders_count,
+                'areas_count': areas_count,
+            })
+
+        return JsonResponse({
+            'success': True,
+            'products': products_data,
+            'count': len(products_data)
+        })
+
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)}, status=500)
+
+@csrf_exempt
+@require_POST
+def api_admin_add_product(request):
+    """Добавление нового изделия"""
+    try:
+        data = json.loads(request.body)
+
+        required = ['model', 'color', 'size', 'quantity']
+        for field in required:
+            if not data.get(field):
+                return JsonResponse({'success': False, 'error': f'Поле {field} обязательно'})
+
+        # Проверяем уникальность
+        existing = Product.objects.filter(
+            model=data['model'],
+            color=data['color'],
+            size=data['size']
+        ).first()
+
+        if existing:
+            # Обновляем количество
+            existing.quantity += int(data['quantity'])
+            existing.save()
+            message = f'Количество обновлено. Теперь: {existing.quantity}'
+        else:
+            # Создаем новый
+            product = Product.objects.create(
+                model=data['model'],
+                color=data['color'],
+                size=data['size'],
+                quantity=int(data['quantity'])
+            )
+            message = 'Изделие добавлено'
+
+        return JsonResponse({'success': True, 'message': message})
+
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)}, status=500)
+
+@csrf_exempt
+@require_POST
+def api_admin_delete_product(request, product_id):
+    """Удаление изделия"""
+    try:
+        product = get_object_or_404(Product, product_id=product_id)
+
+        # Проверяем, есть ли связанные заказы
+        orders_count = Order.objects.filter(product=product).count()
+        if orders_count > 0:
+            return JsonResponse({
+                'success': False,
+                'error': f'Нельзя удалить: есть {orders_count} связанных заказов'
+            })
+
+        product.delete()
+
+        return JsonResponse({
+            'success': True,
+            'message': 'Изделие удалено'
+        })
+
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)}, status=500)
+
+@csrf_exempt
+@require_POST
+def api_admin_delete_all_products(request):
+    """Удаление всех изделий"""
+    try:
+        # Проверяем, есть ли заказы
+        orders_count = Order.objects.count()
+        if orders_count > 0:
+            return JsonResponse({
+                'success': False,
+                'error': f'Сначала удалите все заказы ({orders_count} шт.)'
+            })
+
+        ProductPrintArea.objects.all().delete()
+        Product.objects.all().delete()
+
+        return JsonResponse({
+            'success': True,
+            'message': 'Все изделия удалены'
+        })
+
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)}, status=500)
+
+@csrf_exempt
+@require_POST
+def api_admin_update_product_quantity(request, product_id):
+    """Изменение количества изделия"""
+    try:
+        data = json.loads(request.body)
+        new_quantity = data.get('quantity')
+
+        if new_quantity is None or int(new_quantity) < 0:
+            return JsonResponse({'success': False, 'error': 'Некорректное количество'})
+
+        product = get_object_or_404(Product, product_id=product_id)
+        old_quantity = product.quantity
+        product.quantity = int(new_quantity)
+        product.save()
+
+        return JsonResponse({
+            'success': True,
+            'message': f'Количество изменено: {old_quantity} → {product.quantity}',
+            'new_quantity': product.quantity
+        })
+
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)}, status=500)
+
+# ================== ПРИНТЫ ==================
+
+@csrf_exempt
+def api_admin_prints(request):
+    """Получение списка всех принтов"""
+    try:
+        prints = PrintDesign.objects.all().order_by('name')
+        prints_data = []
+
+        for p in prints:
+            # Сколько раз использован
+            usage_count = OrderPrint.objects.filter(print_design=p.name).count()
+
+            prints_data.append({
+                'id': p.print_id,
+                'name': p.name,
+                'file': p.file_path.url if p.file_path else None,
+                'usage_count': usage_count,
+            })
+
+        return JsonResponse({
+            'success': True,
+            'prints': prints_data,
+            'count': len(prints_data)
+        })
+
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)}, status=500)
+
+@csrf_exempt
+@require_POST
+def api_admin_add_print(request):
+    """Добавление нового принта"""
+    try:
+        name = request.POST.get('name')
+        file = request.FILES.get('file')
+
+        if not name:
+            return JsonResponse({'success': False, 'error': 'Название обязательно'})
+
+        # Проверяем уникальность
+        existing = PrintDesign.objects.filter(name=name).first()
+        if existing:
+            return JsonResponse({'success': False, 'error': 'Принт с таким названием уже существует'})
+
+        print_design = PrintDesign.objects.create(
+            name=name,
+            file_path=file
+        )
+
+        return JsonResponse({
+            'success': True,
+            'message': 'Принт добавлен',
+            'print_id': print_design.print_id
+        })
+
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)}, status=500)
+
+@csrf_exempt
+@require_POST
+def api_admin_delete_print(request, print_id):
+    """Удаление принта"""
+    try:
+        print_design = get_object_or_404(PrintDesign, print_id=print_id)
+
+        # Проверяем, используется ли
+        usage_count = OrderPrint.objects.filter(print_design=print_design.name).count()
+        if usage_count > 0:
+            return JsonResponse({
+                'success': False,
+                'error': f'Принт используется в {usage_count} заказах'
+            })
+
+        print_design.delete()
+
+        return JsonResponse({
+            'success': True,
+            'message': 'Принт удален'
+        })
+
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)}, status=500)
+
+@csrf_exempt
+@require_POST
+def api_admin_delete_all_prints(request):
+    """Удаление всех принтов"""
+    try:
+        usage_count = OrderPrint.objects.count()
+        if usage_count > 0:
+            return JsonResponse({
+                'success': False,
+                'error': f'Сначала удалите заказы с принтами ({usage_count} шт.)'
+            })
+
+        PrintDesign.objects.all().delete()
+
+        return JsonResponse({
+            'success': True,
+            'message': 'Все принты удалены'
+        })
+
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)}, status=500)
+
+# ================== СОТРУДНИКИ ==================
+
+@csrf_exempt
+def api_admin_users(request):
+    """Получение списка сотрудников"""
+    try:
+        users = User.objects.all().order_by('interface', 'employee_name')
+        users_data = []
+
+        for u in users:
+            # Текущая активность
+            active_assignment = OrderAssignment.objects.filter(
+                worker=u,
+                status='in_progress'
+            ).first()
+
+            # Статистика за сегодня
+            today = timezone.now().date()
+            today_assignments = OrderAssignment.objects.filter(
+                worker=u,
+                started_at__date=today,
+                status='completed'
+            )
+
+            completed_count = today_assignments.count()
+            total_time = sum([a.get_duration() or 0 for a in today_assignments])
+
+            users_data.append({
+                'id': u.id,
+                'login': u.login,
+                'employee_name': u.employee_name,
+                'interface': u.interface,
+                'interface_display': u.get_interface_display(),
+                'is_active': u.is_active,
+                'created_at': u.created_at.strftime('%d.%m.%Y'),
+                'current_order': active_assignment.order.order_id if active_assignment else None,
+                'current_order_number': f"ORD{active_assignment.order.order_id:06d}" if active_assignment else None,
+                'today_completed': completed_count,
+                'today_avg_time': round(total_time / completed_count, 1) if completed_count > 0 else 0,
+            })
+
+        return JsonResponse({
+            'success': True,
+            'users': users_data,
+            'count': len(users_data)
+        })
+
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)}, status=500)
+
+@csrf_exempt
+@require_POST
+def api_admin_add_user(request):
+    """Добавление нового сотрудника"""
+    try:
+        data = json.loads(request.body)
+
+        required = ['login', 'password', 'employee_name', 'interface']
+        for field in required:
+            if not data.get(field):
+                return JsonResponse({'success': False, 'error': f'Поле {field} обязательно'})
+
+        # Проверяем уникальность логина
+        existing = User.objects.filter(login=data['login']).first()
+        if existing:
+            return JsonResponse({'success': False, 'error': 'Логин уже занят'})
+
+        user = User.objects.create(
+            login=data['login'],
+            password=data['password'],  # В открытом виде как в вашей системе
+            employee_name=data['employee_name'],
+            interface=data['interface'],
+            is_active=data.get('is_active', True)
+        )
+
+        return JsonResponse({
+            'success': True,
+            'message': 'Сотрудник добавлен',
+            'user_id': user.id
+        })
+
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)}, status=500)
+
+@csrf_exempt
+@require_POST
+def api_admin_delete_user(request, user_id):
+    """Удаление сотрудника"""
+    try:
+        user = get_object_or_404(User, id=user_id)
+
+        # Проверяем, есть ли активные назначения
+        active = OrderAssignment.objects.filter(worker=user, status='in_progress').exists()
+        if active:
+            return JsonResponse({
+                'success': False,
+                'error': 'У сотрудника есть активные заказы'
+            })
+
+        user.delete()
+
+        return JsonResponse({
+            'success': True,
+            'message': 'Сотрудник удален'
+        })
+
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)}, status=500)
+
+@csrf_exempt
+@require_POST
+def api_admin_toggle_user_active(request, user_id):
+    """Активация/деактивация сотрудника"""
+    try:
+        user = get_object_or_404(User, id=user_id)
+
+        # Нельзя деактивировать себя
+        if user.id == request.session.get('user_id'):
+            return JsonResponse({
+                'success': False,
+                'error': 'Нельзя деактивировать себя'
+            })
+
+        user.is_active = not user.is_active
+        user.save()
+
+        return JsonResponse({
+            'success': True,
+            'message': f'Сотрудник {"активирован" if user.is_active else "деактивирован"}',
+            'is_active': user.is_active
+        })
+
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)}, status=500)
+
+# ================== СТАТИСТИКА ==================
+
+@csrf_exempt
+def api_admin_statistics(request):
+    """Получение статистики и информации о состоянии"""
+    try:
+        now = timezone.now()
+        today = now.date()
+
+        # ===== ОБЩАЯ СТАТИСТИКА =====
+        total_orders = Order.objects.count()
+        new_orders = Order.objects.filter(status='new').count()
+        confirmed_orders = Order.objects.filter(status='confirmed').count()
+        composed_orders = Order.objects.filter(status='composed').count()
+        printing_orders = Order.objects.filter(status='printing').count()
+        printed_orders = Order.objects.filter(status='printed').count()
+        completed_orders = Order.objects.filter(status='done').count()
+        cancelled_orders = Order.objects.filter(status='cancelled').count()
+
+        # Сегодняшние заказы
+        today_orders = Order.objects.filter(created_date__date=today).count()
+        today_completed = Order.objects.filter(
+            status='done',
+            created_date__date=today
+        ).count()
+
+        # ===== РАЗМЕР ОЧЕРЕДЕЙ =====
+        queue_reception = Order.objects.filter(status='new').count()
+        queue_composing = Order.objects.filter(status='confirmed').count()
+        queue_printing = Order.objects.filter(status='composed').count()
+        queue_delivery = Order.objects.filter(status='printed').count()
+
+        # ===== ПРОИЗВОДИТЕЛЬНОСТЬ =====
+        # Среднее время от оформления до выдачи
+        completed_orders_with_time = Order.objects.filter(
+            status='done'
+        ).select_related('product')
+
+        total_time = 0
+        count_with_time = 0
+
+        performance_data = []
+        workers_stats = {}
+
+        # Собираем статистику по сотрудникам
+        assignments = OrderAssignment.objects.filter(
+            status='completed'
+        ).select_related('worker', 'order').order_by('-finished_at')[:1000]
+
+        for a in assignments:
+            worker_name = a.worker.employee_name if a.worker else 'Неизвестно'
+            if worker_name not in workers_stats:
+                workers_stats[worker_name] = {
+                    'role': a.get_interface_display() if a.interface else 'Неизвестно',
+                    'completed': 0,
+                    'total_time': 0,
+                    'items': []
+                }
+
+            stats = workers_stats[worker_name]
+            stats['completed'] += 1
+            duration = a.get_duration() or 0
+            stats['total_time'] += duration
+
+            # Для расчета среднего времени изделия
+            if a.order and a.order.status == 'done':
+                order_time = (a.order.created_date - a.order.created_date).total_seconds() / 60
+                stats['items'].append({
+                    'order_id': a.order.order_id,
+                    'time': order_time
+                })
+
+        # Формируем таблицу производительности
+        for worker_name, stats in workers_stats.items():
+            avg_time_per_item = stats['total_time'] / stats['completed'] if stats['completed'] > 0 else 0
+            items_per_hour = 60 / avg_time_per_item if avg_time_per_item > 0 else 0
+
+            performance_data.append({
+                'worker': worker_name,
+                'role': stats['role'],
+                'completed': stats['completed'],
+                'avg_time': round(avg_time_per_item, 1),
+                'items_per_hour': round(items_per_hour, 1),
+            })
+
+        # Сортируем по количеству выполненных
+        performance_data.sort(key=lambda x: x['completed'], reverse=True)
+
+        # ===== ИЗГОТОВЛЕННЫЕ НАНЕСЕНИЯ =====
+        total_prints = OrderPrint.objects.count()
+        today_prints = OrderPrint.objects.filter(order__created_date__date=today).count()
+
+        return JsonResponse({
+            'success': True,
+            'general': {
+                'total_orders': total_orders,
+                'new': new_orders,
+                'confirmed': confirmed_orders,
+                'composed': composed_orders,
+                'printing': printing_orders,
+                'printed': printed_orders,
+                'completed': completed_orders,
+                'cancelled': cancelled_orders,
+                'today_orders': today_orders,
+                'today_completed': today_completed,
+                'total_prints': total_prints,
+                'today_prints': today_prints,
+            },
+            'queues': {
+                'reception': queue_reception,
+                'composing': queue_composing,
+                'printing': queue_printing,
+                'delivery': queue_delivery,
+                'total': queue_reception + queue_composing + queue_printing + queue_delivery
+            },
+            'performance': performance_data,
+            'timestamp': now.strftime('%d.%m.%Y %H:%M:%S')
+        })
+
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)}, status=500)
+
+# ================== УПРАВЛЕНИЕ СЕССИЕЙ ==================
+
+@csrf_exempt
+@require_POST
+def api_admin_stop_session(request):
+    """Остановка сессии - все пользователи в паузу"""
+    try:
+        # Деактивируем всех пользователей кроме администраторов
+        User.objects.exclude(interface='admin').update(is_active=False)
+
+        return JsonResponse({
+            'success': True,
+            'message': 'Сессия остановлена. Все пользователи переведены в режим паузы.'
+        })
+
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)}, status=500)
+
+@csrf_exempt
+@require_POST
+def api_admin_resume_session(request):
+    """Продолжение сессии - активация всех пользователей"""
+    try:
+        # Активируем всех пользователей
+        User.objects.all().update(is_active=True)
+
+        return JsonResponse({
+            'success': True,
+            'message': 'Сессия продолжена. Все пользователи активированы.'
+        })
+
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)}, status=500)
+
+@csrf_exempt
+@require_POST
+def api_admin_restart_session(request):
+    """Перезапуск сессии - удаление всех заказов"""
+    try:
+        data = json.loads(request.body)
+        keep_prints = data.get('keep_prints', False)
+
+        with transaction.atomic():
+            # Удаляем все назначения
+            OrderAssignment.objects.all().delete()
+
+            if keep_prints:
+                # Удаляем заказы, но сохраняем принты? (зависит от логики)
+                OrderPrint.objects.all().delete()
+                Order.objects.all().delete()
+            else:
+                # Полная очистка
+                OrderPrint.objects.all().delete()
+                Order.objects.all().delete()
+
+            # Активируем всех пользователей
+            User.objects.all().update(is_active=True)
+
+        return JsonResponse({
+            'success': True,
+            'message': f'Сессия перезапущена. Все заказы удалены. Нанесения {"сохранены" if keep_prints else "удалены"}.'
+        })
+
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)}, status=500)
+
+@csrf_exempt
+@require_POST
+def api_admin_print_session_label(request):
+    """Печать служебной наклейки с номером сессии и заданием"""
+    try:
+        data = json.loads(request.body)
+        task_description = data.get('task', '')
+
+        # Генерируем номер сессии (можно использовать timestamp)
+        from datetime import datetime
+        session_number = datetime.now().strftime('%Y%m%d%H%M%S')
+
+        # Возвращаем данные для печати
+        return JsonResponse({
+            'success': True,
+            'session_number': session_number,
+            'task': task_description,
+            'print_data': {
+                'session': session_number,
+                'task': task_description,
+                'timestamp': datetime.now().strftime('%d.%m.%Y %H:%M:%S')
+            }
+        })
+
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)}, status=500)

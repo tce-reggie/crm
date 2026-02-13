@@ -62,4 +62,42 @@ urlpatterns = [
     path('api/check-user-status/', views.api_check_user_status, name='api_check_status'),
     # Страница паузы
     path('user-paused/', views.user_paused_view, name='user_paused'),
+
+
+    # Админ панель
+    path('admin-panel/', views.admin_interface, name='admin_interface'),
+
+    # API для админки
+    path('api/admin/orders/', views.api_admin_orders, name='api_admin_orders'),
+    path('api/admin/orders/<int:order_id>/', views.api_admin_order_detail, name='api_admin_order_detail'),
+    path('api/admin/orders/<int:order_id>/status/', views.api_admin_update_order_status, name='api_admin_update_status'),
+    path('api/admin/orders/<int:order_id>/delete/', views.api_admin_delete_order, name='api_admin_delete_order'),
+    path('api/admin/orders/delete-all/', views.api_admin_delete_all_orders, name='api_admin_delete_all_orders'),
+    path('api/admin/orders/create/', views.api_admin_create_order, name='api_admin_create_order'),
+
+    # Продукты
+    path('api/admin/products/', views.api_admin_products, name='api_admin_products'),
+    path('api/admin/products/add/', views.api_admin_add_product, name='api_admin_add_product'),
+    path('api/admin/products/<int:product_id>/delete/', views.api_admin_delete_product, name='api_admin_delete_product'),
+    path('api/admin/products/delete-all/', views.api_admin_delete_all_products, name='api_admin_delete_all_products'),
+    path('api/admin/products/<int:product_id>/update-quantity/', views.api_admin_update_product_quantity, name='api_admin_update_quantity'),
+
+    # Принты
+    path('api/admin/prints/', views.api_admin_prints, name='api_admin_prints'),
+    path('api/admin/prints/add/', views.api_admin_add_print, name='api_admin_add_print'),
+    path('api/admin/prints/<int:print_id>/delete/', views.api_admin_delete_print, name='api_admin_delete_print'),
+    path('api/admin/prints/delete-all/', views.api_admin_delete_all_prints, name='api_admin_delete_all_prints'),
+
+    # Сотрудники
+    path('api/admin/users/', views.api_admin_users, name='api_admin_users'),
+    path('api/admin/users/add/', views.api_admin_add_user, name='api_admin_add_user'),
+    path('api/admin/users/<int:user_id>/delete/', views.api_admin_delete_user, name='api_admin_delete_user'),
+    path('api/admin/users/<int:user_id>/toggle-active/', views.api_admin_toggle_user_active, name='api_admin_toggle_user'),
+
+    # Статистика и сессия
+    path('api/admin/statistics/', views.api_admin_statistics, name='api_admin_statistics'),
+    path('api/admin/session/stop/', views.api_admin_stop_session, name='api_admin_stop_session'),
+    path('api/admin/session/resume/', views.api_admin_resume_session, name='api_admin_resume_session'),
+    path('api/admin/session/restart/', views.api_admin_restart_session, name='api_admin_restart_session'),
+    path('api/admin/session/print-label/', views.api_admin_print_session_label, name='api_admin_print_label'),
 ]
