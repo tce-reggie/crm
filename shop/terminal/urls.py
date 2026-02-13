@@ -53,9 +53,13 @@ urlpatterns = [
     path('api/scoreboard/data/', views.api_scoreboard_data, name='api_scoreboard_data'),
     path('scoreboard/', views.scoreboard_interface, name='scoreboard'),
 
-# Выдача (Delivery)
-path('delivery/', views.delivery_interface, name='delivery_interface'),
-path('api/delivery/orders/', views.api_delivery_orders, name='api_delivery_orders'),
-path('api/delivery/orders/<int:order_id>/complete/', views.api_delivery_complete_order, name='api_delivery_complete'),
+    # Выдача (Delivery)
+    path('delivery/', views.delivery_interface, name='delivery_interface'),
+    path('api/delivery/orders/', views.api_delivery_orders, name='api_delivery_orders'),
+    path('api/delivery/orders/<int:order_id>/complete/', views.api_delivery_complete_order, name='api_delivery_complete'),
 
+    # API для проверки статуса
+    path('api/check-user-status/', views.api_check_user_status, name='api_check_status'),
+    # Страница паузы
+    path('user-paused/', views.user_paused_view, name='user_paused'),
 ]

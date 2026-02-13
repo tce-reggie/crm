@@ -409,12 +409,146 @@ document.addEventListener('DOMContentLoaded', function() {
         updateInterfaceStatus('Произошла ошибка: ' + event.error.message, 'error');
     });
 
-    // Обновление каждые 30 секунд (опционально)
+    // Обновление каждые 30 секунд
     setInterval(checkCurrentOrder, 30000);
+    startStatusCheck()
 });
 
 // Функция для ручного обновления (можно добавить кнопку в интерфейс)
 function refreshInterface() {
     console.log('Ручное обновление интерфейса');
     checkCurrentOrder();
+}
+
+
+// ========================
+// ПРОВЕРКА АКТИВНОСТИ АККАУНТА
+// ========================
+
+let statusCheckInterval = null;
+
+function startStatusCheck() {
+    console.log('Запуск проверки статуса аккаунта...');
+    // Останавливаем предыдущий интервал если был
+    if (statusCheckInterval) {
+        clearInterval(statusCheckInterval);
+    }
+    // Проверяем статус каждые 10 секунд
+    statusCheckInterval = setInterval(checkUserStatus, 10000);
+}
+
+async function checkUserStatus() {
+    try {
+        const response = await fetch('/api/check-user-status/');
+        const data = await response.json();
+
+        console.log('Проверка статуса:', data);
+
+        if (data.success && !data.is_active) {
+            // Аккаунт деактивирован - показываем сообщение
+            showPauseMessage();
+        }
+    } catch (error) {
+        console.error('Ошибка проверки статуса:', error);
+    }
+}
+
+function showPauseMessage() {
+    console.log('Аккаунт деактивирован, показываем сообщение...');
+
+    // Убираем вызов clearTimeout(inactivityTimer) - его нет в этом файле
+    // Просто останавливаем проверку статуса
+    if (statusCheckInterval) {
+        clearInterval(statusCheckInterval);
+        statusCheckInterval = null;
+    }
+
+    // Проверяем, нет ли уже оверлея
+    if (document.getElementById('pauseOverlay')) {
+        return;
+    }
+
+    // Создаем затемнение
+    const overlay = document.createElement('div');
+    overlay.id = 'pauseOverlay';
+    overlay.style.cssText = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0,0,0,0.8);
+        z-index: 10000;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        backdrop-filter: blur(5px);
+    `;
+
+    // Создаем сообщение
+    const messageBox = document.createElement('div');
+    messageBox.style.cssText = `
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 40px;
+        border-radius: 20px;
+        text-align: center;
+        max-width: 400px;
+        box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        animation: pauseAppear 0.5s ease;
+    `;
+
+    messageBox.innerHTML = `
+        <div style="font-size: 80px; margin-bottom: 20px;">⏸️</div>
+        <h2 style="font-size: 28px; margin-bottom: 15px;">Работа приостановлена</h2>
+        <p style="font-size: 16px; margin-bottom: 10px;">Ваш аккаунт был деактивирован администратором.</p>
+        <p style="font-size: 14px; opacity: 0.8; margin-bottom: 20px;">Страница обновится автоматически после активации.</p>
+        <div style="width: 100%; height: 2px; background: rgba(255,255,255,0.2); margin: 20px 0;"></div>
+        <p style="font-size: 12px;">Обратитесь к администратору для возобновления работы</p>
+    `;
+
+    // Добавляем стиль анимации (только если его еще нет)
+    if (!document.getElementById('pauseAnimationStyle')) {
+        const style = document.createElement('style');
+        style.id = 'pauseAnimationStyle';
+        style.textContent = `
+            @keyframes pauseAppear {
+                from {
+                    transform: scale(0.8);
+                    opacity: 0;
+                }
+                to {
+                    transform: scale(1);
+                    opacity: 1;
+                }
+            }
+        `;
+        document.head.appendChild(style);
+    }
+
+    overlay.appendChild(messageBox);
+    document.body.appendChild(overlay);
+
+    // Запускаем проверку каждые 5 секунд для авто-возобновления
+    const resumeCheck = setInterval(async () => {
+        try {
+            const response = await fetch('/api/check-user-status/');
+            const data = await response.json();
+
+            if (data.success && data.is_active) {
+                console.log('Аккаунт снова активен, перезагружаем...');
+                clearInterval(resumeCheck);
+                window.location.reload();
+            }
+        } catch (error) {
+            console.error('Ошибка проверки статуса:', error);
+        }
+    }, 5000);
+}
+
+function stopStatusCheck() {
+    if (statusCheckInterval) {
+        clearInterval(statusCheckInterval);
+        statusCheckInterval = null;
+    }
 }

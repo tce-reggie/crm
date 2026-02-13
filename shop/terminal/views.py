@@ -95,6 +95,10 @@ def admin_interface(request):
         'user_login': request.session.get('login'),
     })
 
+def user_paused_view(request):
+    """Страница, показываемая при деактивации пользователя"""
+    return render(request, 'user_paused.html')
+
 # =========================
 # API ENDPOINTS
 # =========================
@@ -1578,6 +1582,40 @@ def api_delivery_complete_order(request, order_id):
 
     except Exception as e:
         print(f"ERROR api_delivery_complete_order: {str(e)}")
+        return JsonResponse({
+            'success': False,
+            'error': str(e)
+        }, status=500)
+
+
+
+@csrf_exempt
+def api_check_user_status(request):
+    """Проверка статуса пользователя для автоперезагрузки"""
+    try:
+        user_id = request.session.get('user_id')
+
+        if user_id:
+            user = User.objects.get(id=user_id)
+            return JsonResponse({
+                'success': True,
+                'is_active': user.is_active,
+                'interface': user.interface
+            })
+        else:
+            return JsonResponse({
+                'success': True,
+                'is_active': False,
+                'reason': 'not_authenticated'
+            })
+
+    except User.DoesNotExist:
+        return JsonResponse({
+            'success': True,
+            'is_active': False,
+            'reason': 'user_not_found'
+        })
+    except Exception as e:
         return JsonResponse({
             'success': False,
             'error': str(e)

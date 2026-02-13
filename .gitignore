@@ -1,0 +1,32 @@
+# Виртуальное окружение
+.venv/
+venv/
+ENV/
+
+# База данных
+*.sqlite3
+db.sqlite3
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.pyc
+
+# Файлы IDE (PyCharm)
+.idea/
+.vscode/
+
+# Django
+/media/
+/static/
+*.log
+
+# Файлы окружения
+.env
+.env.local
+
+# Системные файлы Windows
+Thumbs.db
+Desktop.ini
