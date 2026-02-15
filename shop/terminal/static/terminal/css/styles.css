@@ -14,8 +14,8 @@ html, body {
 }
 
 body {
-    font-family: Arial, sans-serif;
-    background: #000;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: #0B1120;
     color: #fff;
     overflow: hidden;
 }
@@ -26,7 +26,7 @@ body {
 #screensaver {
     width: 100vw;
     height: 100vh;
-    background: linear-gradient(135deg, #1a1a1a, #2d2d2d);
+    background: linear-gradient(145deg, #0B1120, #1A2639);
     display: flex;
     justify-content: center;
     align-items: center;
@@ -41,12 +41,13 @@ body {
 }
 
 #screensaver div:first-child {
-    animation: pulse 2s infinite;
+    animation: softPulse 3s infinite;
+    opacity: 0.9;
 }
 
-@keyframes pulse {
-    0%, 100% { opacity: 1; }
-    50% { opacity: 0.6; }
+@keyframes softPulse {
+    0%, 100% { opacity: 0.9; transform: scale(1); }
+    50% { opacity: 0.6; transform: scale(0.98); }
 }
 
 /* =========================
@@ -56,24 +57,26 @@ body {
     display: none;
     height: 100vh;
     flex-direction: column;
+    background: #0B1120;
 }
 
 .step-container {
     flex: 1;
     display: none;
     flex-direction: column;
-    background: #1a1a1a;
+    background: #0F172A;
 }
 
 .step-header {
     text-align: center;
-    font-size: 2em;
-    padding: 15px;
-    background: #222;
-    border-bottom: 3px solid #333;
+    font-size: 1.8em;
+    padding: 20px;
+    background: #1E293B;
+    border-bottom: 1px solid #334155;
     color: #fff;
     text-transform: uppercase;
     letter-spacing: 2px;
+    font-weight: 500;
 }
 
 /* =========================
@@ -82,44 +85,49 @@ body {
 .navigation {
     display: flex;
     justify-content: space-between;
-    padding: 25px 30px;
-    background: #222;
-    border-top: 3px solid #333;
+    padding: 20px 30px;
+    background: #1E293B;
+    border-top: 1px solid #334155;
 }
 
 .nav-btn {
-    padding: 20px 40px;
-    font-size: 1.5em;
-    background: #444;
+    padding: 16px 32px;
+    font-size: 1.2em;
+    background: #2D3A4F;
     color: #fff;
-    border: none;
-    border-radius: 15px;
+    border: 1px solid #405571;
+    border-radius: 12px;
     cursor: pointer;
-    min-width: 150px;
-    transition: all 0.3s ease;
-    font-weight: bold;
+    min-width: 140px;
+    transition: all 0.2s ease;
+    font-weight: 500;
     text-transform: uppercase;
+    letter-spacing: 1px;
 }
 
 .nav-btn:hover:not(:disabled) {
-    background: #555;
-    transform: translateY(-2px);
-    box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+    background: #3D4E68;
+    border-color: #5A6F8A;
+    transform: translateY(-1px);
 }
 
 .nav-btn:disabled {
-    background: #333;
-    color: #666;
+    background: #1E293B;
+    color: #5F6B7A;
     cursor: not-allowed;
-    opacity: 0.5;
+    border-color: #2D3A4F;
 }
 
 .nav-btn.confirm {
-    background: #4CAF50;
+    background: #3B82F6;
+    border: none;
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
 }
 
 .nav-btn.confirm:hover {
-    background: #45a049;
+    background: #2563EB;
+    transform: translateY(-1px);
+    box-shadow: 0 6px 16px rgba(59, 130, 246, 0.4);
 }
 
 /* =========================
@@ -134,24 +142,26 @@ body {
 .no-areas-message {
     grid-column: 1 / -1;
     text-align: center;
-    padding: 40px;
-    font-size: 1.2em;
+    padding: 60px 40px;
+    font-size: 1.1em;
     display: flex;
     align-items: center;
     justify-content: center;
     height: 100%;
+    color: #9AA8B9;
 }
 
 .loading-message {
-    color: #888;
+    color: #5F6B7A;
     font-style: italic;
 }
 
 .error-message {
-    color: #ff6b6b;
-    background: rgba(255, 107, 107, 0.1);
-    border-radius: 10px;
+    color: #EF4444;
+    background: #2D1F2A;
+    border-radius: 16px;
     margin: 20px;
+    border: 1px solid #4F2E3A;
 }
 
 /* =========================
@@ -161,24 +171,24 @@ body {
     flex: 1;
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-    gap: 25px;
-    padding: 40px;
+    gap: 20px;
+    padding: 30px;
     overflow-y: auto;
     align-content: start;
 }
 
 .product-card {
-    background: #333;
-    border-radius: 25px;
+    background: #1E293B;
+    border-radius: 24px;
     display: flex;
     flex-direction: column;
     justify-content: center;
     align-items: center;
     padding: 30px 20px;
-    font-size: 1.8em;
+    font-size: 1.5em;
     text-align: center;
-    transition: all 0.3s ease;
-    border: 3px solid transparent;
+    transition: all 0.2s ease;
+    border: 1px solid #334155;
     min-height: 280px;
     cursor: pointer;
     position: relative;
@@ -191,8 +201,8 @@ body {
     top: 0;
     left: 0;
     right: 0;
-    height: 5px;
-    background: linear-gradient(90deg, transparent, #4CAF50, transparent);
+    height: 2px;
+    background: linear-gradient(90deg, transparent, #3B82F6, transparent);
     opacity: 0;
     transition: opacity 0.3s ease;
 }
@@ -202,22 +212,21 @@ body {
 }
 
 .product-card.selected {
-    border-color: #4CAF50;
-    background: #3a3a3a;
-    transform: scale(1.02);
-    box-shadow: 0 10px 30px rgba(76, 175, 80, 0.3);
+    background: #26344B;
+    border-color: #3B82F6;
+    transform: scale(1.01);
+    box-shadow: 0 12px 24px -8px rgba(0, 0, 0, 0.5);
 }
 
 .product-card:hover {
-    background: #3a3a3a;
-    transform: translateY(-5px);
-    box-shadow: 0 10px 20px rgba(0,0,0,0.3);
+    background: #26344B;
+    transform: translateY(-2px);
 }
 
 .product-image {
-    width: 180px;
-    height: 180px;
-    background: #444;
+    width: 160px;
+    height: 160px;
+    background: #0F172A;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -225,31 +234,34 @@ body {
     margin-bottom: 20px;
     overflow: hidden;
     position: relative;
+    border: 1px solid #334155;
 }
 
 .product-image img {
     width: 100%;
     height: 100%;
     object-fit: contain;
-    border-radius: 15px;
     transition: transform 0.3s ease;
+    opacity: 0.9;
 }
 
 .product-card:hover .product-image img {
     transform: scale(1.05);
+    opacity: 1;
 }
 
 .product-title {
-    font-weight: bold;
-    margin-bottom: 10px;
+    font-weight: 500;
+    margin-bottom: 8px;
     color: #fff;
+    font-size: 0.9em;
+    letter-spacing: 0.5px;
 }
 
 .product-description {
-    font-size: 0.7em;
-    margin-top: 10px;
-    opacity: 0.8;
-    color: #aaa;
+    font-size: 0.6em;
+    opacity: 0.5;
+    color: #9AA8B9;
 }
 
 /* =========================
@@ -258,24 +270,24 @@ body {
 .models-grid {
     flex: 1;
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: 25px;
-    padding: 40px;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 20px;
+    padding: 30px;
     overflow-y: auto;
     align-content: start;
 }
 
 .color-card {
-    background: #333;
+    background: #1E293B;
     border-radius: 20px;
     display: flex;
     flex-direction: column;
     align-items: center;
-    padding: 25px 15px;
+    padding: 24px 15px;
     cursor: pointer;
-    transition: all 0.3s ease;
-    border: 3px solid transparent;
-    min-height: 200px;
+    transition: all 0.2s ease;
+    border: 1px solid #334155;
+    min-height: 180px;
     position: relative;
     overflow: hidden;
 }
@@ -286,8 +298,8 @@ body {
     top: 0;
     left: 0;
     right: 0;
-    height: 5px;
-    background: linear-gradient(90deg, transparent, #4CAF50, transparent);
+    height: 2px;
+    background: linear-gradient(90deg, transparent, #3B82F6, transparent);
     opacity: 0;
     transition: opacity 0.3s ease;
 }
@@ -297,58 +309,57 @@ body {
 }
 
 .color-card:hover {
-    background: #3a3a3a;
-    transform: translateY(-5px);
-    box-shadow: 0 10px 20px rgba(0,0,0,0.3);
+    background: #26344B;
+    transform: translateY(-2px);
 }
 
 .color-card.selected {
-    border-color: #4CAF50;
-    background: #3a3a3a;
-    transform: scale(1.05);
-    box-shadow: 0 10px 30px rgba(76, 175, 80, 0.3);
+    background: #26344B;
+    border-color: #3B82F6;
+    transform: scale(1.02);
+    box-shadow: 0 12px 24px -8px rgba(0, 0, 0, 0.5);
 }
 
 .color-image {
-    width: 140px;
-    height: 140px;
-    border-radius: 15px;
+    width: 120px;
+    height: 120px;
+    border-radius: 16px;
     overflow: hidden;
-    margin-bottom: 15px;
+    margin-bottom: 16px;
     display: flex;
     align-items: center;
     justify-content: center;
-    background: #222;
-    border: 2px solid #444;
+    background: #0F172A;
+    border: 1px solid #334155;
 }
 
 .color-image img {
     width: 100%;
     height: 100%;
     object-fit: contain;
-    border-radius: 10px;
+    opacity: 0.9;
 }
 
 .color-image-placeholder {
-    width: 140px;
-    height: 140px;
+    width: 120px;
+    height: 120px;
     display: flex;
     align-items: center;
     justify-content: center;
-    background: #444;
-    border-radius: 15px;
-    margin-bottom: 15px;
-    font-size: 1.1em;
-    color: #fff;
-    border: 2px solid #555;
+    background: #0F172A;
+    border-radius: 16px;
+    margin-bottom: 16px;
+    font-size: 1em;
+    color: #9AA8B9;
+    border: 1px solid #334155;
 }
 
 .color-name {
-    font-weight: bold;
-    font-size: 1.2em;
+    font-weight: 500;
+    font-size: 1em;
     text-align: center;
     color: #fff;
-    margin-top: 5px;
+    opacity: 0.9;
 }
 
 /* =========================
@@ -357,26 +368,26 @@ body {
 .sizes-grid {
     flex: 1;
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-    gap: 25px;
-    padding: 40px;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 20px;
+    padding: 30px;
     overflow-y: auto;
     align-content: start;
 }
 
 .size-card {
-    background: #333;
+    background: #1E293B;
     border-radius: 20px;
     display: flex;
     flex-direction: column;
     justify-content: center;
     align-items: center;
-    padding: 25px 20px;
-    font-size: 1.4em;
+    padding: 24px 20px;
+    font-size: 1.2em;
     text-align: center;
-    transition: all 0.3s ease;
-    border: 3px solid transparent;
-    min-height: 200px;
+    transition: all 0.2s ease;
+    border: 1px solid #334155;
+    min-height: 180px;
     cursor: pointer;
     position: relative;
     overflow: hidden;
@@ -388,8 +399,8 @@ body {
     top: 0;
     left: 0;
     right: 0;
-    height: 5px;
-    background: linear-gradient(90deg, transparent, #4CAF50, transparent);
+    height: 2px;
+    background: linear-gradient(90deg, transparent, #3B82F6, transparent);
     opacity: 0;
     transition: opacity 0.3s ease;
 }
@@ -399,43 +410,43 @@ body {
 }
 
 .size-card.selected {
-    border-color: #4CAF50;
-    background: #3a3a3a;
-    transform: scale(1.05);
-    box-shadow: 0 10px 30px rgba(76, 175, 80, 0.3);
+    background: #26344B;
+    border-color: #3B82F6;
+    transform: scale(1.02);
+    box-shadow: 0 12px 24px -8px rgba(0, 0, 0, 0.5);
 }
 
 .size-card:hover {
-    background: #3a3a3a;
-    transform: translateY(-5px);
-    box-shadow: 0 10px 20px rgba(0,0,0,0.3);
+    background: #26344B;
+    transform: translateY(-2px);
 }
 
 .size-card[style*="opacity: 0.5"] {
+    opacity: 0.4 !important;
     cursor: not-allowed;
 }
 
 .size-card[style*="opacity: 0.5"]:hover {
     transform: none;
-    box-shadow: none;
+    background: #1E293B;
 }
 
 .size-badge {
-    font-size: 2.8em;
-    font-weight: bold;
-    margin-bottom: 15px;
-    color: #4CAF50;
-    text-shadow: 0 2px 10px rgba(76, 175, 80, 0.3);
+    font-size: 2.2em;
+    font-weight: 600;
+    margin-bottom: 12px;
+    color: #3B82F6;
+    opacity: 0.9;
 }
 
 .size-image {
-    width: 140px;
-    height: 140px;
-    border-radius: 15px;
+    width: 120px;
+    height: 120px;
+    border-radius: 16px;
     overflow: hidden;
-    margin-bottom: 15px;
-    background: #222;
-    border: 2px solid #444;
+    margin-bottom: 16px;
+    background: #0F172A;
+    border: 1px solid #334155;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -445,33 +456,30 @@ body {
     width: 100%;
     height: 100%;
     object-fit: contain;
-    border-radius: 10px;
+    opacity: 0.9;
 }
 
 .size-title {
-    font-weight: bold;
+    font-weight: 500;
     margin-bottom: 8px;
-    font-size: 1.1em;
+    font-size: 1em;
     color: #fff;
 }
 
 .size-stock {
     font-size: 0.8em;
-    margin-top: 5px;
-    padding: 5px 10px;
-    border-radius: 10px;
-    background: rgba(255, 255, 255, 0.1);
+    padding: 4px 12px;
+    border-radius: 20px;
+    background: #0F172A;
+    color: #9AA8B9;
 }
 
 /* =========================
    ШАГ 4: ПРИНТЫ И ЗОНЫ ПЕЧАТИ
    ========================= */
 
-
-/* Левая часть: Превью товара и зоны печати */
-/*Обёртка для изображения и области печати*/
 .image-wrapper {
-    position: relative; /* Это будет точка отсчета для области печати */
+    position: relative;
     width: 100%;
     height: 100%;
 }
@@ -480,15 +488,14 @@ body {
     width: 100%;
     height: 100%;
     display: flex;
-    background: #111;
-    border-radius: 15px;
-    justify-content:flex-start;
+    background: #0F172A;
+    border-radius: 20px;
+    justify-content: flex-start;
     align-items: flex-start;
-
     overflow: visible;
-
     position: relative;
-        text-align: left;
+    text-align: left;
+    border: 1px solid #334155;
 }
 
 #productSideImageContainer img {
@@ -496,75 +503,68 @@ body {
     max-width: 100%;
     max-height: 100%;
     object-fit: contain;
-    border-radius: 10px;
     align-self: flex-start;
     display: block;
     position: relative;
     z-index: 1;
     pointer-events: none;
+    opacity: 0.9;
 }
 
-/* Область печати*/
 .print-areas-tabs {
     display: flex;
     flex-wrap: wrap;
-    gap: 15px;
+    gap: 12px;
     padding: 20px;
-    background: #222;
-    border-radius: 15px;
-    border: 2px solid #333;
+    background: #1E293B;
+    border-radius: 16px;
+    border: 1px solid #334155;
 }
 
 #printAreasTabs {
     display: flex;
     flex-wrap: wrap;
-    gap: 15px;
+    gap: 12px;
     padding: 20px;
-    background: #222;
-    border-radius: 15px;
-    border: 2px solid #333;
+    background: #1E293B;
+    border-radius: 16px;
+    border: 1px solid #334155;
     margin-top: 15px;
     min-height: 80px;
 }
 
-/* Стили для каждой кнопки-вкладки */
 #printAreasTabs .area-tab {
-    padding: 15px 25px;
-    background: #4CAF50; /* Зеленый цвет */
-    border: 2px solid #388E3C; /* Темно-зеленая рамка */
-    border-radius: 10px; /* Закругленные края */
-    color: white;
+    padding: 12px 24px;
+    background: #2D3A4F;
+    border: 1px solid #405571;
+    border-radius: 30px;
+    color: #fff;
     cursor: pointer;
-    font-size: 1.2em;
-    font-weight: bold;
-    transition: all 0.3s ease;
-    min-width: 120px;
+    font-size: 1em;
+    font-weight: 500;
+    transition: all 0.2s ease;
+    min-width: 100px;
     text-align: center;
     user-select: none;
 }
 
-/* Эффект при наведении */
 #printAreasTabs .area-tab:hover {
-    background: #45A049;
-    border-color: #2E7D32;
-    transform: translateY(-2px);
-    box-shadow: 0 5px 15px rgba(76, 175, 80, 0.4);
+    background: #3D4E68;
+    border-color: #5A6F8A;
+    transform: translateY(-1px);
 }
 
-/* Активная вкладка */
 #printAreasTabs .area-tab.active {
-    background: #2E7D32; /* Темнее для активной */
-    border-color: #1B5E20;
-    box-shadow: 0 5px 15px rgba(27, 94, 32, 0.6);
+    background: #3B82F6;
+    border-color: #3B82F6;
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
 }
 
 .print-area {
     position: absolute;
-
-    border: 3px dashed rgba(76, 175, 80, 0.7);
-    background: rgba(76, 175, 80, 0.1);
-    border-radius: 15px;
-
+    border: 2px dashed #3B82F6;
+    background: rgba(59, 130, 246, 0.1);
+    border-radius: 12px;
     overflow: visible;
     z-index: 20;
     pointer-events: auto;
@@ -576,8 +576,8 @@ body {
     position: relative;
     width: 100%;
     height: 100%;
-    background: #111;
-    border-radius: 15px;
+    background: #0F172A;
+    border-radius: 20px;
     overflow: hidden;
 }
 
@@ -587,21 +587,20 @@ body {
     left: 50%;
     transform: translate(-50%, -50%);
     text-align: center;
-    color: rgba(255, 255, 255, 0.7);
-    font-size: 1.3em;
+    color: #9AA8B9;
+    font-size: 1.1em;
     line-height: 1.5;
     pointer-events: none;
-    padding: 20px;
-    background: rgba(0, 0, 0, 0.5);
-    border-radius: 10px;
-    backdrop-filter: blur(5px);
+    padding: 16px 24px;
+    background: #1E293B;
+    border-radius: 30px;
+    border: 1px solid #334155;
 }
 
-/* Объекты принтов внутри области */
 .print-object {
     position: absolute;
-    border: 2px solid #4CAF50;
-    background: rgba(76, 175, 80, 0.2);
+    border: 2px solid #3B82F6;
+    background: rgba(59, 130, 246, 0.15);
     cursor: move;
     display: flex;
     align-items: center;
@@ -609,13 +608,14 @@ body {
     overflow: hidden;
     box-sizing: border-box;
     z-index: 20;
-    border-radius: 5px;
-    transition: border-color 0.3s ease;
+    border-radius: 8px;
+    transition: all 0.2s ease;
 }
 
 .print-object:hover {
-    border-color: #fff;
-    background: rgba(76, 175, 80, 0.3);
+    border-color: #5A9BFF;
+    background: rgba(59, 130, 246, 0.25);
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.2);
 }
 
 .print-object img {
@@ -623,42 +623,41 @@ body {
     height: 100%;
     object-fit: contain;
     pointer-events: none;
+    opacity: 0.9;
 }
-
-/* Правая часть: Принты и информация */
 
 #currentAreaInfo {
-    color: #4CAF50;
-    font-weight: bold;
-    font-size: 1.2em;
-    padding: 10px;
-    background: rgba(76, 175, 80, 0.1);
-    border-radius: 8px;
-    border-left: 4px solid #4CAF50;
+    color: #3B82F6;
+    font-weight: 500;
+    font-size: 1.1em;
+    padding: 12px 16px;
+    background: #1E293B;
+    border-radius: 30px;
+    border: 1px solid #334155;
+    display: inline-block;
 }
 
-/* Галерея принтов */
 .prints-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
-    gap: 20px;
+    grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+    gap: 16px;
     padding: 20px;
-    background: #222;
-    border-radius: 15px;
+    background: #1E293B;
+    border-radius: 20px;
     overflow-y: auto;
     max-height: 350px;
-    border: 3px solid #333;
+    border: 1px solid #334155;
 }
 
 .print-card {
-    background: #333;
-    border-radius: 12px;
-    padding: 20px 15px;
+    background: #0F172A;
+    border-radius: 16px;
+    padding: 16px 12px;
     text-align: center;
-    transition: all 0.3s ease;
-    border: 2px solid transparent;
+    transition: all 0.2s ease;
+    border: 1px solid #334155;
     cursor: pointer;
-    min-height: 140px;
+    min-height: 120px;
     display: flex;
     flex-direction: column;
     justify-content: center;
@@ -673,8 +672,8 @@ body {
     top: 0;
     left: 0;
     right: 0;
-    height: 5px;
-    background: linear-gradient(90deg, transparent, #4CAF50, transparent);
+    height: 2px;
+    background: linear-gradient(90deg, transparent, #3B82F6, transparent);
     opacity: 0;
     transition: opacity 0.3s ease;
 }
@@ -684,56 +683,55 @@ body {
 }
 
 .print-card:hover {
-    background: #3a3a3a;
-    border-color: #4CAF50;
-    transform: translateY(-5px) scale(1.05);
-    box-shadow: 0 10px 25px rgba(0,0,0,0.4);
+    background: #1E293B;
+    border-color: #3B82F6;
+    transform: translateY(-2px);
 }
 
 .print-icon {
-    width: 100px;
-    height: 100px;
+    width: 80px;
+    height: 80px;
     display: flex;
     align-items: center;
     justify-content: center;
-    margin-bottom: 15px;
-    background: #222;
-    border-radius: 10px;
+    margin-bottom: 12px;
+    background: #1E293B;
+    border-radius: 12px;
     overflow: hidden;
-    border: 2px solid #444;
+    border: 1px solid #334155;
 }
 
 .print-icon img {
     max-width: 100%;
     max-height: 100%;
     object-fit: contain;
-    border-radius: 8px;
+    opacity: 0.9;
 }
 
 .print-name {
-    font-size: 1em;
-    font-weight: bold;
+    font-size: 0.9em;
+    font-weight: 500;
     color: #fff;
     word-break: break-word;
     line-height: 1.3;
+    opacity: 0.9;
 }
 
-/* Список текущих принтов */
 .current-prints-summary {
-    background: #222;
-    border-radius: 15px;
-    padding: 25px;
-    border: 3px solid #333;
+    background: #1E293B;
+    border-radius: 20px;
+    padding: 20px;
+    border: 1px solid #334155;
     overflow-y: auto;
     max-height: 250px;
 }
 
 .current-prints-summary h3 {
     margin-top: 0;
-    margin-bottom: 20px;
-    color: #4CAF50;
-    font-size: 1.4em;
-    text-transform: uppercase;
+    margin-bottom: 16px;
+    color: #3B82F6;
+    font-size: 1.2em;
+    font-weight: 500;
     letter-spacing: 1px;
 }
 
@@ -744,67 +742,60 @@ body {
 }
 
 .current-prints-summary li {
-    padding: 12px 15px;
-    margin-bottom: 10px;
-    background: #333;
-    border-radius: 8px;
-    color: #ddd;
-    font-size: 1em;
-    border-left: 4px solid #4CAF50;
-    transition: background 0.3s ease;
+    padding: 12px 16px;
+    margin-bottom: 8px;
+    background: #0F172A;
+    border-radius: 12px;
+    color: #fff;
+    font-size: 0.95em;
+    border-left: 3px solid #3B82F6;
+    transition: all 0.2s ease;
 }
 
 .current-prints-summary li:hover {
-    background: #3a3a3a;
+    background: #1A2536;
 }
 
-/* Сообщения о загрузке */
 .loading-message-small {
     padding: 40px;
     text-align: center;
-    color: #888;
+    color: #5F6B7A;
     font-style: italic;
-    font-size: 1.2em;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    height: 100%;
-    width: 100%;
+    font-size: 1.1em;
 }
 
 .no-image-message {
     padding: 40px;
     text-align: center;
-    color: #666;
+    color: #5F6B7A;
     font-style: italic;
-    font-size: 1.1em;
+    font-size: 1em;
 }
 
 /*========================
-ШАГ 4 оформление интерфейса меню текущих принтов
+ШАГ 4 - СПИСОК ПРИНТОВ
 ==========================*/
 .print-list-item {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 10px 15px;
+    padding: 12px 16px;
     margin-bottom: 8px;
-    background: #333;
-    border-radius: 8px;
-    border-left: 4px solid #4CAF50;
+    background: #0F172A;
+    border-radius: 12px;
+    border-left: 3px solid #3B82F6;
     cursor: pointer;
-    transition: all 0.3s ease;
+    transition: all 0.2s ease;
 }
 
 .print-list-item:hover {
-    background: #3a3a3a;
-    transform: translateX(5px);
+    background: #1A2536;
+    transform: translateX(4px);
 }
 
 .print-list-item.selected {
-    background: #2d2d2d;
-    border-left-color: #FF9800;
-    box-shadow: 0 0 0 2px rgba(255, 152, 0, 0.3);
+    background: #1E293B;
+    border-left-color: #F59E0B;
 }
 
 .print-item-info {
@@ -812,14 +803,15 @@ body {
 }
 
 .print-item-name {
-    font-weight: bold;
+    font-weight: 500;
     color: white;
-    margin-bottom: 3px;
+    margin-bottom: 4px;
+    font-size: 0.95em;
 }
 
 .print-item-coords {
     font-size: 0.8em;
-    color: #aaa;
+    color: #9AA8B9;
 }
 
 .print-item-actions {
@@ -828,74 +820,76 @@ body {
 }
 
 .btn-save-small, .btn-remove-small {
-    padding: 4px 8px;
-    border-radius: 4px;
+    padding: 6px 12px;
+    border-radius: 20px;
     border: none;
     cursor: pointer;
     font-size: 0.8em;
     transition: all 0.2s;
+    font-weight: 500;
 }
 
 .btn-save-small {
-    background: #2196F3;
+    background: #3B82F6;
     color: white;
 }
 
 .btn-remove-small {
-    background: #f44336;
+    background: #EF4444;
     color: white;
 }
 
 .btn-save-small:hover, .btn-remove-small:hover {
-    opacity: 0.9;
     transform: scale(1.05);
+    filter: brightness(1.1);
 }
 
 .saved-badge {
-    color: #4CAF50;
+    color: #10B981;
     font-size: 0.8em;
     padding: 4px 8px;
+    background: #1A2A38;
+    border-radius: 20px;
 }
 
-/* Кнопка сохранения всех */
 .save-all-container {
-    margin-top: 15px;
+    margin-top: 20px;
     text-align: center;
 }
 
 .btn-save-all {
-    padding: 10px 20px;
-    background: linear-gradient(145deg, #4CAF50, #2E7D32);
+    padding: 12px 24px;
+    background: #3B82F6;
     color: white;
     border: none;
-    border-radius: 8px;
-    font-size: 0.9em;
-    font-weight: bold;
+    border-radius: 30px;
+    font-size: 0.95em;
+    font-weight: 500;
     cursor: pointer;
-    transition: all 0.3s;
+    transition: all 0.2s;
     width: 100%;
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
 }
 
 .btn-save-all:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 5px 15px rgba(76, 175, 80, 0.4);
+    background: #2563EB;
+    transform: translateY(-1px);
+    box-shadow: 0 6px 16px rgba(59, 130, 246, 0.4);
 }
 
-/* Бейдж несохраненного принта */
 .unsaved-badge {
     position: absolute;
-    top: 5px;
-    right: 5px;
-    background: #ff9800;
+    top: 8px;
+    right: 8px;
+    background: #F59E0B;
     color: white;
-    padding: 2px 6px;
-    border-radius: 3px;
+    padding: 4px 8px;
+    border-radius: 20px;
     font-size: 0.7em;
-    font-weight: bold;
+    font-weight: 500;
 }
 
-/* Стили для модального окна */
-/* Стили для модального окна (в теме сайта) */
+/* Модальное окно */
 .modal {
     position: fixed;
     top: 0;
@@ -903,30 +897,41 @@ body {
     width: 100%;
     height: 100%;
     background: rgba(0, 0, 0, 0.8);
-    display: none; /* Изначально скрыто */
+    display: none;
     align-items: center;
     justify-content: center;
     z-index: 9999;
 }
 
 .modal-content {
-    background: #222;
-    padding: 30px;
-    border-radius: 15px;
+    background: #1E293B;
+    padding: 32px;
+    border-radius: 24px;
     width: 90%;
     max-width: 500px;
-    border: 3px solid #333;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+    border: 1px solid #334155;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+    animation: modalFadeIn 0.2s ease-out;
+}
+
+@keyframes modalFadeIn {
+    from {
+        opacity: 0;
+        transform: scale(0.95);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
 }
 
 .modal-content h3 {
     margin-top: 0;
-    color: #4CAF50; /* Зеленый как у активных кнопок */
+    color: #3B82F6;
     margin-bottom: 20px;
     text-align: center;
-    font-size: 1.4em;
-    text-transform: uppercase;
-    letter-spacing: 1px;
+    font-size: 1.3em;
+    font-weight: 500;
 }
 
 .form-group {
@@ -936,201 +941,179 @@ body {
 .form-group label {
     display: block;
     margin-bottom: 8px;
-    color: #fff;
-    font-weight: bold;
-    font-size: 1.1em;
+    color: #9AA8B9;
+    font-weight: 500;
+    font-size: 0.95em;
 }
 
 .form-group textarea {
     width: 100%;
-    padding: 15px;
-    background: #333;
-    border: 2px solid #444;
-    border-radius: 8px;
+    padding: 14px 16px;
+    background: #0F172A;
+    border: 1px solid #334155;
+    border-radius: 12px;
     color: white;
-    font-size: 16px;
-    font-family: 'Arial', sans-serif;
+    font-size: 15px;
+    font-family: 'Inter', sans-serif;
     resize: vertical;
     min-height: 100px;
-    box-sizing: border-box;
-    transition: all 0.3s ease;
+    transition: all 0.2s ease;
 }
 
 .form-group textarea:focus {
     outline: none;
-    border-color: #4CAF50; /* Зеленый фокус */
-    box-shadow: 0 0 0 2px rgba(76, 175, 80, 0.3);
+    border-color: #3B82F6;
+    background: #1A2536;
 }
 
 .char-counter {
     text-align: right;
-    margin-top: 5px;
-    color: #888;
-    font-size: 0.9em;
+    margin-top: 6px;
+    color: #5F6B7A;
+    font-size: 0.85em;
 }
 
 .modal-actions {
     display: flex;
-    gap: 15px;
-    margin-top: 25px;
+    gap: 12px;
+    margin-top: 24px;
 }
 
 .btn-cancel, .btn-confirm {
-    padding: 12px 25px;
+    padding: 12px 24px;
     border: none;
-    border-radius: 8px;
-    font-size: 1em;
-    font-weight: bold;
+    border-radius: 30px;
+    font-size: 0.95em;
+    font-weight: 500;
     cursor: pointer;
     flex: 1;
-    transition: all 0.3s;
+    transition: all 0.2s;
 }
 
 .btn-cancel {
-    background: #555;
+    background: #2D3A4F;
     color: white;
-    border: 2px solid #666;
+    border: 1px solid #405571;
 }
 
 .btn-cancel:hover {
-    background: #666;
-    border-color: #777;
-    transform: translateY(-2px);
+    background: #3D4E68;
 }
 
 .btn-confirm {
-    background: linear-gradient(145deg, #4CAF50, #2E7D32); /* Зеленый градиент */
+    background: #3B82F6;
     color: white;
-    border: 2px solid #388E3C;
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
 }
 
 .btn-confirm:hover {
-    background: linear-gradient(145deg, #45A049, #2E7D32);
-    border-color: #4CAF50;
-    transform: translateY(-2px);
-    box-shadow: 0 5px 15px rgba(76, 175, 80, 0.4);
+    background: #2563EB;
+    transform: translateY(-1px);
+    box-shadow: 0 6px 16px rgba(59, 130, 246, 0.4);
 }
 
-/* Стиль для текстового принта */
 .print-object.text-print {
-    font-family: 'Arial', sans-serif;
+    font-family: 'Inter', sans-serif;
     font-size: 14px;
-    font-weight: bold;
+    font-weight: 500;
     color: #000;
     text-align: center;
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: 5px;
-    box-sizing: border-box;
-    background: rgba(255, 255, 255, 0.9); /* Белый фон для текста */
-    border-radius: 5px;
+    padding: 8px;
+    background: #FFFFFF;
+    border-radius: 8px;
+    border: 2px solid #3B82F6;
 }
 
-/* Бейдж для текстовых принтов */
 .print-object.text-print::before {
-    content: 'ТЕКСТ';
+    content: 'TEXT';
     position: absolute;
-    top: 5px;
-    left: 5px;
-    background: #FF9800; /* Оранжевый для текстовых принтов */
+    top: -20px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #3B82F6;
     color: white;
-    padding: 2px 6px;
-    border-radius: 3px;
-    font-size: 0.7em;
-    font-weight: bold;
-    z-index: 5;
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 0.6em;
+    font-weight: 600;
+    white-space: nowrap;
 }
 
-/* Карточка для добавления текста в галерее */
 .add-text-card {
-    background: linear-gradient(145deg, #FF9800, #F57C00) !important; /* Оранжевый градиент */
-    border: 2px solid #FF9800 !important;
+    background: #F59E0B !important;
+    border: none !important;
 }
 
 .add-text-card:hover {
-    background: linear-gradient(145deg, #F57C00, #E65100) !important;
-    border-color: #FF9800 !important;
-    transform: translateY(-5px) scale(1.05);
-    box-shadow: 0 10px 25px rgba(255, 152, 0, 0.4);
+    background: #D97706 !important;
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(245, 158, 11, 0.3);
 }
 
 .add-text-icon {
-    background: rgba(255, 255, 255, 0.1) !important;
-    border: 2px solid rgba(255, 255, 255, 0.3) !important;
+    background: rgba(255,255,255,0.1) !important;
+    border: 1px solid rgba(255,255,255,0.2) !important;
 }
 
 .add-text-symbol {
-    font-size: 40px;
+    font-size: 36px;
     line-height: 1;
     color: white;
 }
 
 .add-text-card .print-name {
     color: white !important;
-    font-weight: bold !important;
-}
-
-/* Анимация появления модального окна */
-@keyframes modalFadeIn {
-    from {
-        opacity: 0;
-        transform: translateY(-20px);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
-}
-
-.modal-content {
-    animation: modalFadeIn 0.3s ease-out;
+    font-weight: 500 !important;
 }
 
 /* =========================
    ШАГ 5: ПОДТВЕРЖДЕНИЕ ЗАКАЗА
    ========================= */
-/* ПРОСТОЙ СТИЛЬ
-   ========================= */
 .confirmation-content {
-    padding: 20px;
+    padding: 30px;
     display: flex;
     flex-direction: column;
-    gap: 20px;
+    gap: 24px;
     height: calc(100% - 60px);
     overflow-y: auto;
 }
 
 .order-summary, .customer-data {
-    background: #222;
-    border-radius: 10px;
-    padding: 20px;
-    border: 2px solid #333;
+    background: #1E293B;
+    border-radius: 20px;
+    padding: 24px;
+    border: 1px solid #334155;
 }
 
 .order-summary h3, .customer-data h3 {
     color: #fff;
     margin-bottom: 20px;
     text-align: center;
-    font-size: 1.5em;
+    font-size: 1.3em;
+    font-weight: 500;
+    letter-spacing: 1px;
 }
 
 .summary-section {
-    margin-bottom: 20px;
+    margin-bottom: 24px;
 }
 
 .summary-section h4 {
-    color: #4CAF50;
-    margin-bottom: 15px;
-    font-size: 1.2em;
+    color: #3B82F6;
+    margin-bottom: 16px;
+    font-size: 1.1em;
+    font-weight: 500;
 }
 
 .summary-item {
     display: flex;
     justify-content: space-between;
-    margin-bottom: 10px;
-    padding-bottom: 10px;
-    border-bottom: 1px solid #333;
+    margin-bottom: 12px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid #334155;
 }
 
 .summary-item:last-child {
@@ -1138,238 +1121,226 @@ body {
 }
 
 .label {
-    color: #aaa;
-    font-weight: bold;
+    color: #9AA8B9;
+    font-weight: 400;
 }
 
 .value {
     color: #fff;
+    font-weight: 500;
 }
-/* сообщение о сохранении заказа */
+
 #orderSuccessMessage {
-    background: rgba(76, 175, 80, 0.9);
+    background: #10B981;
     color: white;
-    padding: 20px;
-    border-radius: 10px;
+    padding: 16px 24px;
+    border-radius: 30px;
     margin: 20px 0;
     text-align: center;
-    font-size: 1.2em;
-    border: 3px solid #4CAF50;
-    animation: fadeIn 0.5s ease;
+    font-size: 1.1em;
+    border: 1px solid #34D399;
+    animation: fadeIn 0.3s ease;
 }
 
 @keyframes fadeIn {
-    from { opacity: 0; transform: translateY(-10px); }
+    from { opacity: 0; transform: translateY(-5px); }
     to { opacity: 1; transform: translateY(0); }
-}
-
-.confirm-btn {
-    transition: all 0.3s ease;
-}
-
-.confirm-btn:disabled {
-    opacity: 0.6;
-    cursor: not-allowed;
 }
 
 .print-name {
     color: #fff;
-    padding: 5px 0;
-    padding-left: 15px;
+    padding: 4px 0;
+    padding-left: 20px;
+    position: relative;
 }
 
 .print-name:before {
     content: "•";
-    color: #4CAF50;
+    color: #3B82F6;
     position: absolute;
-    margin-left: -15px;
+    left: 8px;
+    font-size: 1.2em;
 }
 
 .no-prints {
-    color: #888;
+    color: #5F6B7A;
     font-style: italic;
     text-align: center;
-    padding: 20px;
+    padding: 24px;
 }
 
-/* Форма */
 .form-input {
     width: 100%;
-    padding: 15px;
-    margin-bottom: 15px;
-    background: #333;
+    padding: 14px 16px;
+    margin-bottom: 16px;
+    background: #0F172A;
     color: #fff;
-    border: 2px solid #444;
-    border-radius: 8px;
-    font-size: 1.1em;
+    border: 1px solid #334155;
+    border-radius: 12px;
+    font-size: 1em;
+    transition: all 0.2s ease;
 }
 
 .form-input:focus {
     outline: none;
-    border-color: #4CAF50;
+    border-color: #3B82F6;
+    background: #1A2536;
 }
 
 .confirm-btn {
     width: 100%;
-    padding: 15px;
-    background: #4CAF50;
+    padding: 16px;
+    background: #3B82F6;
     color: white;
     border: none;
-    border-radius: 8px;
-    font-size: 1.3em;
-    font-weight: bold;
+    border-radius: 30px;
+    font-size: 1.2em;
+    font-weight: 500;
     cursor: pointer;
-    margin-top: 10px;
+    transition: all 0.2s;
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
 }
 
 .confirm-btn:hover {
-    background: #45a049;
+    background: #2563EB;
+    transform: translateY(-1px);
+    box-shadow: 0 6px 16px rgba(59, 130, 246, 0.4);
 }
 
 /* Секция промокода */
 .promocode-section {
-    background: #2a2a2a;
-    border-radius: 10px;
+    background: #1E293B;
+    border-radius: 16px;
     padding: 20px;
     margin: 20px 0;
-    border: 1px solid #444;
+    border: 1px solid #334155;
 }
 
 .promocode-section h3 {
     margin-top: 0;
-    margin-bottom: 15px;
-    color: #FF9800;
-    font-size: 1.2em;
+    margin-bottom: 16px;
+    color: #F59E0B;
+    font-size: 1.1em;
+    font-weight: 500;
 }
 
 .promocode-input-group {
     display: flex;
-    gap: 10px;
-    margin-bottom: 10px;
+    gap: 12px;
+    margin-bottom: 12px;
 }
 
 #promocodeInput {
     flex: 1;
-    padding: 12px 15px;
-    border: 2px solid #444;
-    border-radius: 8px;
-    background: #1a1a1a;
+    padding: 12px 16px;
+    border: 1px solid #334155;
+    border-radius: 30px;
+    background: #0F172A;
     color: white;
-    font-size: 16px;
-    transition: border-color 0.3s;
+    font-size: 15px;
+    transition: all 0.2s;
 }
 
 #promocodeInput:focus {
     outline: none;
-    border-color: #FF9800;
+    border-color: #F59E0B;
+    background: #1A2536;
 }
 
 .btn-promocode {
-    padding: 12px 25px;
-    background: linear-gradient(135deg, #4CAF50, #45a049);
+    padding: 12px 24px;
+    background: #3B82F6;
     color: white;
     border: none;
-    border-radius: 8px;
+    border-radius: 30px;
     cursor: pointer;
-    font-weight: bold;
-    font-size: 16px;
-    transition: all 0.3s;
+    font-weight: 500;
+    font-size: 15px;
+    transition: all 0.2s;
     white-space: nowrap;
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
 }
 
 .btn-promocode:hover {
-    background: linear-gradient(135deg, #45a049, #3d8b40);
-    transform: translateY(-2px);
-    box-shadow: 0 4px 15px rgba(76, 175, 80, 0.3);
-}
-
-.btn-promocode:active {
-    transform: translateY(0);
+    background: #2563EB;
+    transform: translateY(-1px);
+    box-shadow: 0 6px 16px rgba(59, 130, 246, 0.4);
 }
 
 .btn-promocode:disabled {
-    background: #666;
+    opacity: 0.5;
     cursor: not-allowed;
     transform: none;
     box-shadow: none;
 }
 
 .promocode-message {
-    padding: 10px;
-    border-radius: 5px;
+    padding: 10px 16px;
+    border-radius: 30px;
     font-size: 14px;
     text-align: center;
     min-height: 20px;
 }
 
 .promocode-success {
-    color: #4CAF50;
-    background: rgba(76, 175, 80, 0.1);
-    border: 1px solid #4CAF50;
+    color: #10B981;
+    background: #1A2A38;
+    border: 1px solid #10B981;
 }
 
 .promocode-error {
-    color: #ff6b6b;
-    background: rgba(255, 107, 107, 0.1);
-    border: 1px solid #ff6b6b;
+    color: #EF4444;
+    background: #2D1F2A;
+    border: 1px solid #EF4444;
 }
 
 .promocode-info {
-    color: #FF9800;
-    background: rgba(255, 152, 0, 0.1);
-    border: 1px solid #FF9800;
+    color: #F59E0B;
+    background: #2A2620;
+    border: 1px solid #F59E0B;
 }
 
-/* Добавь в сводку заказа блок для отображения скидки */
 .discount-row {
     display: flex;
     justify-content: space-between;
-    padding: 10px 0;
-    border-top: 1px solid #444;
-    margin-top: 10px;
-    font-weight: bold;
+    padding: 12px 0;
+    border-top: 1px solid #334155;
+    margin-top: 12px;
+    font-weight: 500;
 }
 
 .discount-amount {
-    color: #4CAF50;
+    color: #10B981;
 }
 
 .final-total {
     font-size: 1.2em;
-    color: #FF9800;
+    color: #F59E0B;
 }
 
-/* 1. ОСНОВНОЙ СКРОЛЛ ДЛЯ ВСЕХ ШАГОВ */
-/* Стильный SWAG WW градиентный скроллбар */
-
+/* СКРОЛЛЫ */
 html, body {
     margin: 0;
     padding: 0;
-    overflow: hidden; /* Главное - убираем общий скролл */
+    overflow: hidden;
     width: 100vw;
     height: 100vh;
-    max-width: 100vw;
-    max-height: 100vh;
 }
 
-/* 2. ОСНОВНОЙ КОНТЕЙНЕР ПРИЛОЖЕНИЯ */
 #app {
     width: 100vw;
     height: 100vh;
     overflow: hidden;
     display: flex;
     flex-direction: column;
-    background: #1a1a1a;
 }
 
-/* 3. КОНТЕЙНЕР ДЛЯ ВСЕХ ШАГОВ */
 .steps-container {
     flex: 1;
-    overflow: hidden; /* Убираем скролл у контейнера шагов */
+    overflow: hidden;
     position: relative;
 }
 
-/* 4. КАЖДЫЙ ШАГ С ВЕРТИКАЛЬНЫМ СКРОЛЛОМ */
 .step-container {
     position: absolute;
     top: 0;
@@ -1378,73 +1349,42 @@ html, body {
     bottom: 0;
     overflow-y: auto;
     overflow-x: hidden;
-    padding: 20px;
-    padding-bottom: 100px; /* Место для навигации */
-    box-sizing: border-box;
+    padding: 30px;
+    padding-bottom: 100px;
 }
 
-/* 5. ФИКСИРОВАННАЯ НАВИГАЦИЯ */
 .navigation {
     position: fixed;
     bottom: 0;
     left: 0;
     right: 0;
-    background: #1a1a1a;
-    padding: 15px 20px;
-    border-top: 2px solid #333;
+    background: #1E293B;
+    padding: 16px 30px;
+    border-top: 1px solid #334155;
     z-index: 1000;
-    box-sizing: border-box;
 }
 
-/* 6. КРАСИВЫЙ СКРОЛЛБАР */
 ::-webkit-scrollbar {
-    width: 12px;
+    width: 8px;
     height: 0;
 }
 
 ::-webkit-scrollbar-track {
-    background: linear-gradient(180deg,
-        #1a1a1a 0%,
-        #222222 50%,
-        #1a1a1a 100%);
-    border-radius: 8px;
-    border: 1px solid #333;
+    background: #0F172A;
+    border-radius: 20px;
 }
 
 ::-webkit-scrollbar-thumb {
-    background: linear-gradient(180deg,
-        #888888 0%,
-        #666666 30%,
-        #555555 70%,
-        #444444 100%);
-    border-radius: 8px;
-    border: 2px solid #2a2a2a;
+    background: #334155;
+    border-radius: 20px;
+    transition: all 0.2s;
 }
 
-/* 7. УБИРАЕМ ГОРИЗОНТАЛЬНЫЙ СКРОЛЛ У ВСЕХ ЭЛЕМЕНТОВ */
+::-webkit-scrollbar-thumb:hover {
+    background: #405571;
+}
+
 * {
-    max-width: 100%;
-    box-sizing: border-box;
-}
-
-/* 8. ОСОБО ДЛЯ КОНТЕЙНЕРОВ С КОНТЕНТОМ */
-.products-container,
-.models-container,
-.sizes-container,
-.prints-gallery,
-.current-prints-list,
-.summary-container {
-    width: 100%;
-    max-width: 100%;
-    overflow-x: hidden;
-}
-
-/* 9. ДЛЯ КАРТОЧЕК ТОВАРОВ/ЦВЕТОВ/РАЗМЕРОВ */
-.product-card,
-.color-card,
-.size-card,
-.print-card {
-    width: 100%;
     max-width: 100%;
     box-sizing: border-box;
 }
@@ -1458,17 +1398,14 @@ body {
     scrollbar-width: none;
 }
 
-
-/*----------------*/
-/* Success screen */
-/*----------------*/
+/* SUCCESS SCREEN */
 #successScreen {
     position: fixed;
     top: 0;
     left: 0;
     width: 100vw;
     height: 100vh;
-    background: #1a1a1a; /* Тот же цвет фона, что и на других шагах */
+    background: #0B1120;
     display: none;
     align-items: center;
     justify-content: center;
@@ -1477,132 +1414,144 @@ body {
 
 .success-container {
     width: 90%;
-    max-width: 500px;
+    max-width: 480px;
     padding: 20px;
 }
 
 .success-frame {
-    background: #222; /* Цвет как у .step-container */
-    border-radius: 15px;
-    padding: 40px 30px;
-    border: 3px solid #333; /* Та же рамка как у других контейнеров */
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+    background: #1E293B;
+    border-radius: 32px;
+    padding: 40px 32px;
+    border: 1px solid #334155;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
     text-align: center;
 }
 
-/* Заголовок */
 .success-header {
-    margin-bottom: 30px;
-    padding-bottom: 20px;
-    border-bottom: 2px solid #444;
+    margin-bottom: 32px;
+    padding-bottom: 24px;
+    border-bottom: 1px solid #334155;
 }
 
 .success-title {
-    color: #4CAF50;
-    font-size: 1.8em;
-    font-weight: bold;
+    color: #3B82F6;
+    font-size: 1.6em;
+    font-weight: 500;
     text-transform: uppercase;
-    letter-spacing: 1px;
+    letter-spacing: 2px;
 }
 
-/* Сообщение */
 .success-message {
-    color: #ddd;
+    color: #9AA8B9;
     font-size: 1.1em;
     line-height: 1.5;
-    margin-bottom: 30px;
-    padding: 0 10px;
+    margin-bottom: 32px;
 }
 
-/* Номер заказа */
 .order-number-wrapper {
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 10px;
-    margin-bottom: 30px;
-    padding: 20px;
-    background: #2a2a2a; /* Чуть темнее фона рамки */
-    border-radius: 10px;
-    border: 2px solid #444;
+    gap: 12px;
+    margin-bottom: 32px;
+    padding: 24px;
+    background: #0F172A;
+    border-radius: 24px;
+    border: 1px solid #334155;
 }
 
 .order-number-label {
-    color: #aaa;
-    font-size: 1.2em;
-    font-weight: bold;
-    letter-spacing: 2px;
-}
-
-.order-number {
-    color: #FF9800;
-    font-size: 2.5em;
-    font-weight: bold;
-    font-family: 'Courier New', monospace;
-    letter-spacing: 3px;
-}
-
-/* Разделитель */
-.divider {
-    height: 2px;
-    background: #333;
-    margin: 30px 0;
-    width: 100%;
-}
-
-/* Кнопка - используем те же стили что и у других кнопок */
-.success-button-wrapper {
-    margin-top: 10px;
-}
-
-.success-button {
-    background: linear-gradient(135deg, #4CAF50, #2E7D32);
-    color: white;
-    border: none;
-    border-radius: 10px;
-    padding: 18px 40px;
-    font-size: 1.2em;
-    font-weight: bold;
-    cursor: pointer;
-    min-width: 200px;
-    transition: all 0.3s ease;
-    text-transform: uppercase;
+    color: #9AA8B9;
+    font-size: 1.1em;
+    font-weight: 500;
     letter-spacing: 1px;
 }
 
+.order-number {
+    color: #F59E0B;
+    font-size: 2.2em;
+    font-weight: 600;
+    font-family: 'Inter', monospace;
+    letter-spacing: 2px;
+}
+
+.divider {
+    height: 1px;
+    background: #334155;
+    margin: 32px 0;
+}
+
+.success-button {
+    background: #3B82F6;
+    color: white;
+    border: none;
+    border-radius: 30px;
+    padding: 16px 40px;
+    font-size: 1.1em;
+    font-weight: 500;
+    cursor: pointer;
+    min-width: 200px;
+    transition: all 0.2s ease;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+}
+
 .success-button:hover {
-    background: linear-gradient(135deg, #45a049, #2E7D32);
-    transform: translateY(-2px);
-    box-shadow: 0 5px 15px rgba(76, 175, 80, 0.3);
+    background: #2563EB;
+    transform: translateY(-1px);
+    box-shadow: 0 6px 16px rgba(59, 130, 246, 0.4);
 }
 
 /* Адаптивность */
-@media (max-width: 600px) {
-    .success-frame {
-        padding: 30px 20px;
+@media (max-width: 768px) {
+    .step-header {
+        font-size: 1.4em;
+        padding: 16px;
     }
 
-    .success-title {
-        font-size: 1.5em;
+    .navigation {
+        padding: 16px 20px;
     }
 
-    .order-number {
-        font-size: 2em;
+    .nav-btn {
+        padding: 12px 24px;
+        font-size: 1em;
+        min-width: 120px;
     }
 
-    .success-button {
-        padding: 15px 30px;
-        font-size: 1.1em;
+    .products-grid,
+    .models-grid,
+    .sizes-grid {
+        padding: 20px;
+        gap: 16px;
+    }
+
+    .product-card,
+    .color-card,
+    .size-card {
+        min-height: 240px;
+        padding: 20px;
+    }
+
+    .product-image {
+        width: 140px;
+        height: 140px;
     }
 }
 
-@media (max-width: 400px) {
-    .success-frame {
-        padding: 25px 15px;
+@media (max-width: 480px) {
+    .navigation {
+        flex-direction: column;
+        gap: 12px;
     }
 
-    .success-message {
-        font-size: 1em;
+    .nav-btn {
+        width: 100%;
+    }
+
+    .success-frame {
+        padding: 30px 20px;
     }
 
     .order-number {
