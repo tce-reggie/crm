@@ -1644,36 +1644,95 @@ def api_admin_orders(request):
         date_from = request.GET.get('date_from', '')
         date_to = request.GET.get('date_to', '')
 
-        orders = Order.objects.all().select_related('product', 'promocode').prefetch_related('assignments')
+        print(f"Фильтры: date_from={date_from}, date_to={date_to}")  # Отладка
 
+        # Получаем все заказы с необходимыми связями
+        orders = Order.objects.all().select_related(
+            'product',
+            'promocode'
+        ).prefetch_related(
+            'assignments',
+            'assignments__worker'
+        ).order_by('-created_date')
+
+        # Фильтр по статусу
         if status_filter and status_filter != 'all':
             orders = orders.filter(status=status_filter)
 
+        # Поиск по имени, телефону или номеру заказа
         if search_query:
             from django.db.models import Q
             conditions = Q()
             conditions |= Q(customer_name__icontains=search_query)
             conditions |= Q(phone_number__icontains=search_query)
-            conditions |= Q(order_id__icontains=search_query if search_query.isdigit() else 0)
+
+            # Поиск по номеру заказа (ORDxxxxxx)
+            try:
+                if search_query.isdigit():
+                    conditions |= Q(order_id=int(search_query))
+                elif search_query.upper().startswith('ORD'):
+                    num_part = search_query[3:].strip()
+                    if num_part.isdigit():
+                        conditions |= Q(order_id=int(num_part))
+            except (ValueError, IndexError):
+                pass
+
             orders = orders.filter(conditions)
 
-        if date_from:
-            orders = orders.filter(created_date__gte=date_from)
-        if date_to:
-            orders = orders.filter(created_date__lte=date_to)
+        # ФИЛЬТРАЦИЯ ПО ДАТАМ (ИСПРАВЛЕНО)
+        if date_from and date_to:
+            # Обе даты указаны - диапазон между ними
+            from datetime import datetime
+            try:
+                # Преобразуем строки в объекты даты
+                start_date = datetime.strptime(date_from, '%Y-%m-%d').date()
+                end_date = datetime.strptime(date_to, '%Y-%m-%d').date()
 
-        orders = orders.order_by('-created_date')
+                # Фильтруем заказы, созданные между start_date и end_date (включительно)
+                orders = orders.filter(
+                    created_date__date__gte=start_date,
+                    created_date__date__lte=end_date
+                )
+                print(f"Фильтр по диапазону: от {start_date} до {end_date}")
+
+            except Exception as e:
+                print(f"Ошибка парсинга дат: {e}")
+
+        elif date_from:
+            # Только начальная дата - все заказы после этой даты (включительно)
+            from datetime import datetime
+            try:
+                start_date = datetime.strptime(date_from, '%Y-%m-%d').date()
+                orders = orders.filter(created_date__date__gte=start_date)
+                print(f"Фильтр от даты: {start_date} и позже")
+
+            except Exception as e:
+                print(f"Ошибка парсинга начальной даты: {e}")
+
+        elif date_to:
+            # Только конечная дата - все заказы до этой даты (включительно)
+            from datetime import datetime
+            try:
+                end_date = datetime.strptime(date_to, '%Y-%m-%d').date()
+                orders = orders.filter(created_date__date__lte=end_date)
+                print(f"Фильтр до даты: {end_date} и раньше")
+
+            except Exception as e:
+                print(f"Ошибка парсинга конечной даты: {e}")
 
         orders_data = []
         for order in orders:
+            # Количество принтов
             prints_count = OrderPrint.objects.filter(order=order).count()
-            assignments = order.assignments.all()
+
+            # Текущий работник (активное назначение)
+            active_assignment = order.assignments.filter(status='in_progress').first()
             current_worker = None
             current_stage = None
 
-            for a in assignments.filter(status='in_progress').first():
-                current_worker = a.worker.employee_name if a.worker else None
-                current_stage = a.get_interface_display() if a.interface else None
+            if active_assignment and active_assignment.worker:
+                current_worker = active_assignment.worker.employee_name
+                current_stage = active_assignment.get_interface_display()
 
             orders_data.append({
                 'id': order.order_id,
@@ -1684,7 +1743,6 @@ def api_admin_orders(request):
                 'status_display': order.get_status_display(),
                 'created_date': order.created_date.strftime('%d.%m.%Y %H:%M'),
                 'product': {
-                    'id': order.product.product_id,
                     'model': order.product.model,
                     'color': order.product.color,
                     'size': order.product.size,
@@ -1699,9 +1757,14 @@ def api_admin_orders(request):
             'success': True,
             'orders': orders_data,
             'count': len(orders_data),
+            'filters': {  # Для отладки
+                'date_from': date_from,
+                'date_to': date_to
+            }
         })
 
     except Exception as e:
+        print(f"ERROR api_admin_orders: {str(e)}")
         return JsonResponse({'success': False, 'error': str(e)}, status=500)
 
 @csrf_exempt
@@ -2482,6 +2545,354 @@ def api_admin_print_session_label(request):
                 'task': task_description,
                 'timestamp': datetime.now().strftime('%d.%m.%Y %H:%M:%S')
             }
+        })
+
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)}, status=500)
+
+
+# =========================
+# ADMIN EVENTS API ENDPOINTS
+# =========================
+
+@csrf_exempt
+def api_admin_events(request):
+    """Получение списка всех мероприятий"""
+    try:
+        events = EventsList.objects.all().order_by('-is_active', 'event_name')
+        events_data = []
+
+        for e in events:
+            events_data.append({
+                'id': e.id,
+                'event_name': e.event_name,
+                'is_active': e.is_active,
+            })
+
+        return JsonResponse({
+            'success': True,
+            'events': events_data,
+            'count': len(events_data)
+        })
+
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)}, status=500)
+
+
+@csrf_exempt
+@require_POST
+def api_admin_add_event(request):
+    """Добавление нового мероприятия"""
+    try:
+        data = json.loads(request.body)
+        event_name = data.get('event_name', '').strip()
+        is_active = data.get('is_active', False)
+
+        if not event_name:
+            return JsonResponse({'success': False, 'error': 'Название мероприятия обязательно'})
+
+        # Проверяем уникальность
+        existing = EventsList.objects.filter(event_name=event_name).first()
+        if existing:
+            return JsonResponse({'success': False, 'error': 'Мероприятие с таким названием уже существует'})
+
+        # Создаем мероприятие
+        event = EventsList.objects.create(
+            event_name=event_name,
+            is_active=is_active
+        )
+
+        return JsonResponse({
+            'success': True,
+            'message': f'Мероприятие "{event_name}" добавлено',
+            'event_id': event.id
+        })
+
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)}, status=500)
+
+
+@csrf_exempt
+@require_POST
+def api_admin_update_event(request, event_id):
+    """Обновление мероприятия"""
+    try:
+        data = json.loads(request.body)
+        event_name = data.get('event_name', '').strip()
+        is_active = data.get('is_active', False)
+
+        if not event_name:
+            return JsonResponse({'success': False, 'error': 'Название мероприятия обязательно'})
+
+        event = get_object_or_404(EventsList, id=event_id)
+
+        # Проверяем уникальность названия
+        existing = EventsList.objects.filter(event_name=event_name).exclude(id=event_id).first()
+        if existing:
+            return JsonResponse({'success': False, 'error': 'Мероприятие с таким названием уже существует'})
+
+        old_name = event.event_name
+        event.event_name = event_name
+        event.is_active = is_active
+        event.save()
+
+        return JsonResponse({
+            'success': True,
+            'message': f'Мероприятие "{old_name}" обновлено'
+        })
+
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)}, status=500)
+
+
+@csrf_exempt
+@require_POST
+def api_admin_set_active_event(request, event_id):
+    """Установить мероприятие активным"""
+    try:
+        event = get_object_or_404(EventsList, id=event_id)
+
+        # Деактивируем все мероприятия
+        EventsList.objects.exclude(id=event_id).update(is_active=False)
+
+        # Активируем выбранное
+        event.is_active = True
+        event.save()
+
+        return JsonResponse({
+            'success': True,
+            'message': f'Мероприятие "{event.event_name}" активировано'
+        })
+
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)}, status=500)
+
+
+@csrf_exempt
+@require_POST
+def api_admin_delete_event(request, event_id):
+    """Удаление мероприятия"""
+    try:
+        event = get_object_or_404(EventsList, id=event_id)
+
+        # Проверяем, есть ли связанные товары
+        products_count = EventsProducts.objects.filter(event=event).count()
+        prints_count = EventsPrints.objects.filter(event=event).count()
+
+        if products_count > 0 or prints_count > 0:
+            return JsonResponse({
+                'success': False,
+                'error': f'Нельзя удалить: связанных товаров: {products_count}, принтов: {prints_count}'
+            })
+
+        event_name = event.event_name
+        event.delete()
+
+        return JsonResponse({
+            'success': True,
+            'message': f'Мероприятие "{event_name}" удалено'
+        })
+
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)}, status=500)
+
+
+# ========== ТОВАРЫ МЕРОПРИЯТИЙ ==========
+
+@csrf_exempt
+def api_admin_events_products(request):
+    """Получение списка товаров мероприятий"""
+    try:
+        from django.db.models import Q
+
+        event_id = request.GET.get('event_id')
+        search = request.GET.get('search', '')
+
+        items = EventsProducts.objects.select_related('event', 'product').all().order_by('event__event_name',
+                                                                                         'product__model')
+
+        if event_id and event_id != 'all':
+            items = items.filter(event_id=event_id)
+
+        if search:
+            items = items.filter(
+                Q(product__model__icontains=search) |
+                Q(product__color__icontains=search) |
+                Q(product__size__icontains=search)
+            )
+
+        items_data = []
+        for item in items:
+            items_data.append({
+                'id': item.id,
+                'event_id': item.event.id,
+                'event_name': item.event.event_name,
+                'product_id': item.product.product_id,
+                'product_name': str(item.product),
+                'product_model': item.product.model,
+                'product_color': item.product.color,
+                'product_size': item.product.size,
+            })
+
+        return JsonResponse({
+            'success': True,
+            'items': items_data,
+            'count': len(items_data)
+        })
+
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)}, status=500)
+
+
+@csrf_exempt
+@require_POST
+def api_admin_add_event_product(request):
+    """Добавление товара в мероприятие"""
+    try:
+        data = json.loads(request.body)
+        event_id = data.get('event_id')
+        product_id = data.get('product_id')
+
+        if not event_id or not product_id:
+            return JsonResponse({'success': False, 'error': 'Не указаны event_id или product_id'})
+
+        # Проверяем существование
+        event = get_object_or_404(EventsList, id=event_id)
+        product = get_object_or_404(Product, product_id=product_id)
+
+        # Проверяем уникальность
+        existing = EventsProducts.objects.filter(event=event, product=product).first()
+        if existing:
+            return JsonResponse({'success': False, 'error': 'Этот товар уже добавлен в мероприятие'})
+
+        # Создаем связь
+        item = EventsProducts.objects.create(
+            event=event,
+            product=product
+        )
+
+        return JsonResponse({
+            'success': True,
+            'message': f'Товар "{product.model} {product.color}" добавлен в мероприятие "{event.event_name}"',
+            'item_id': item.id
+        })
+
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)}, status=500)
+
+
+@csrf_exempt
+@require_POST
+def api_admin_delete_event_product(request, item_id):
+    """Удаление товара из мероприятия"""
+    try:
+        item = get_object_or_404(EventsProducts, id=item_id)
+        event_name = item.event.event_name
+        product_info = str(item.product)
+
+        item.delete()
+
+        return JsonResponse({
+            'success': True,
+            'message': f'Товар "{product_info}" удален из мероприятия "{event_name}"'
+        })
+
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)}, status=500)
+
+
+# ========== ПРИНТЫ МЕРОПРИЯТИЙ ==========
+
+@csrf_exempt
+def api_admin_events_prints(request):
+    """Получение списка принтов мероприятий"""
+    try:
+        from django.db.models import Q
+
+        event_id = request.GET.get('event_id')
+        search = request.GET.get('search', '')
+
+        items = EventsPrints.objects.select_related('event', 'print_design').all().order_by('event__event_name',
+                                                                                            'print_design__name')
+
+        if event_id and event_id != 'all':
+            items = items.filter(event_id=event_id)
+
+        if search:
+            items = items.filter(print_design__name__icontains=search)
+
+        items_data = []
+        for item in items:
+            items_data.append({
+                'id': item.id,
+                'event_id': item.event.id,
+                'event_name': item.event.event_name,
+                'print_id': item.print_design.print_id,
+                'print_name': item.print_design.name,
+                'print_file': item.print_design.file_path.url if item.print_design.file_path else None,
+            })
+
+        return JsonResponse({
+            'success': True,
+            'items': items_data,
+            'count': len(items_data)
+        })
+
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)}, status=500)
+
+
+@csrf_exempt
+@require_POST
+def api_admin_add_event_print(request):
+    """Добавление принта в мероприятие"""
+    try:
+        data = json.loads(request.body)
+        event_id = data.get('event_id')
+        print_id = data.get('print_id')
+
+        if not event_id or not print_id:
+            return JsonResponse({'success': False, 'error': 'Не указаны event_id или print_id'})
+
+        # Проверяем существование
+        event = get_object_or_404(EventsList, id=event_id)
+        print_design = get_object_or_404(PrintDesign, print_id=print_id)
+
+        # Проверяем уникальность
+        existing = EventsPrints.objects.filter(event=event, print_design=print_design).first()
+        if existing:
+            return JsonResponse({'success': False, 'error': 'Этот принт уже добавлен в мероприятие'})
+
+        # Создаем связь
+        item = EventsPrints.objects.create(
+            event=event,
+            print_design=print_design
+        )
+
+        return JsonResponse({
+            'success': True,
+            'message': f'Принт "{print_design.name}" добавлен в мероприятие "{event.event_name}"',
+            'item_id': item.id
+        })
+
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)}, status=500)
+
+
+@csrf_exempt
+@require_POST
+def api_admin_delete_event_print(request, item_id):
+    """Удаление принта из мероприятия"""
+    try:
+        item = get_object_or_404(EventsPrints, id=item_id)
+        event_name = item.event.event_name
+        print_name = item.print_design.name
+
+        item.delete()
+
+        return JsonResponse({
+            'success': True,
+            'message': f'Принт "{print_name}" удален из мероприятия "{event_name}"'
         })
 
     except Exception as e:
