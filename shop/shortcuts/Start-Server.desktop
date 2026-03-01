@@ -1,0 +1,10 @@
+[Desktop Entry]
+Version=1.0
+Name= Запустить сервер
+Comment=Запуск Event Management System
+Exec=gnome-terminal -- bash -c "sudo /home/vagrant/scripts/start.sh; exec bash"
+Icon=utilities-terminal
+Terminal=false
+Type=Application
+Categories=Application;
+StartupNotify=true

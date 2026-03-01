@@ -1,0 +1,10 @@
+[Desktop Entry]
+Version=1.0
+Name= Терминал
+Comment=Открыть терминал
+Exec=gnome-terminal
+Icon=utilities-terminal
+Terminal=false
+Type=Application
+Categories=Application;
+StartupNotify=true

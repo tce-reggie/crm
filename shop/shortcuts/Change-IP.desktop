@@ -1,0 +1,10 @@
+[Desktop Entry]
+Version=1.0
+Name= Изменить IP
+Comment=Изменение IP адреса сервера
+Exec=gnome-terminal -- bash -c "sudo /home/vagrant/scripts/change-ip.sh; exec bash"
+Icon=preferences-system-network
+Terminal=false
+Type=Application
+Categories=Application;
+StartupNotify=true

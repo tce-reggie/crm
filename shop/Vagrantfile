@@ -1,0 +1,32 @@
+# -*- mode: ruby -*-
+# vi: set ft=ruby :
+
+Vagrant.configure("2") do |config|
+  config.vm.box = "ubuntu/jammy64"
+
+  config.vm.provider "virtualbox" do |vb|
+    vb.name = "EventManagementServer"
+    vb.memory = "2048"
+    vb.cpus = 2
+    vb.gui = true
+  end
+
+  # Проброс портов
+  config.vm.network "forwarded_port", guest: 80, host: 8080, id: "web"
+  config.vm.network "forwarded_port", guest: 22, host: 2222, id: "ssh"
+
+  # private network закомментирована (не нужна)
+  # config.vm.network "private_network", type: "dhcp"
+
+  config.vm.synced_folder ".", "/vagrant"
+
+  config.vm.provision "shell", path: "install.sh"
+
+  config.vm.provision "file", source: "scripts", destination: "/home/vagrant/scripts"
+  config.vm.provision "file", source: "shortcuts", destination: "/home/vagrant/Desktop"
+
+  config.vm.provision "shell", inline: <<-SHELL
+    chmod +x /home/vagrant/scripts/*.sh
+    chmod +x /home/vagrant/Desktop/*.desktop
+  SHELL
+end

@@ -1,0 +1,61 @@
+# Git
+.git
+.gitignore
+.gitattributes
+.github/
+
+# IDE и редакторы
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.python-version
+venv/
+env/
+.venv/
+ENV/
+env.bak/
+venv.bak/
+
+# Django
+*.log
+local_settings.py
+data/db.sqlite3
+db.sqlite3-journal
+media/
+staticfiles/
+static/
+*.pot
+*.pyc
+
+# Docker
+docker/.env
+.dockerignore
+Dockerfile
+docker-compose.yml
+
+# Vagrant
+.vagrant/
+Vagrantfile
+*.box
+
+# Проектные папки (не нужны в образе)
+scripts/
+shortcuts/
+install.sh
+README.md
+LICENSE
+
+# Тесты и документация
+tests/
+docs/
+*.md
+*.rst

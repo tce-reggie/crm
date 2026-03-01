@@ -1,0 +1,32 @@
+cd ~/PycharmProjects/tce-reggie/crm/shop
+vagrant up --provider=virtualbox
+
+
+vagrant ssh
+
+# Внутри VM:
+cd /opt/event-system
+
+# Скопируйте файлы (если install.sh не сделал этого)
+sudo cp -r /vagrant/docker/* .
+sudo cp /vagrant/requirements.txt .
+sudo cp /vagrant/docker/.env.example .env
+
+# Запустите
+sudo docker-compose up -d --build
+
+# Проверьте
+sudo docker-compose ps
+
+для отключения и очистки содержимого вм :
+cd ~/PycharmProjects/tce-reggie/crm/shop
+
+
+# Остановите VM
+vagrant halt
+
+# Удалите VM полностью
+vagrant destroy -f
+
+# Удалите служебную папку Vagrant
+rm -rf .vagrant
