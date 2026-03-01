@@ -53,6 +53,13 @@ function loadTabData(tabName) {
         case 'statistics':
             loadStatistics();
             break;
+        case 'events':
+            // По умолчанию загружаем первую подвкладку
+            loadEvents();
+            // Загружаем данные для фильтров
+            loadEventsForSelect('eventProductFilter');
+            loadEventsForSelect('eventPrintFilter');
+            break;
     }
 }
 
@@ -1164,6 +1171,45 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         }
     });
+
+   const eventSearch = document.getElementById('eventSearch');
+    if (eventSearch) {
+        let timeout;
+        eventSearch.addEventListener('input', function() {
+            clearTimeout(timeout);
+            timeout = setTimeout(() => {
+                if (document.getElementById('eventsList').style.display !== 'none') {
+                    loadEvents();
+                }
+            }, 500);
+        });
+    }
+
+    const eventProductSearch = document.getElementById('eventProductSearch');
+    if (eventProductSearch) {
+        let timeout;
+        eventProductSearch.addEventListener('input', function() {
+            clearTimeout(timeout);
+            timeout = setTimeout(() => {
+                if (document.getElementById('eventsProducts').style.display !== 'none') {
+                    loadEventsProducts();
+                }
+            }, 500);
+        });
+    }
+
+    const eventPrintSearch = document.getElementById('eventPrintSearch');
+    if (eventPrintSearch) {
+        let timeout;
+        eventPrintSearch.addEventListener('input', function() {
+            clearTimeout(timeout);
+            timeout = setTimeout(() => {
+                if (document.getElementById('eventsPrints').style.display !== 'none') {
+                    loadEventsPrints();
+                }
+            }, 500);
+        });
+    }
 });
 
 // Очищаем интервал при выгрузке
@@ -1172,3 +1218,562 @@ window.addEventListener('beforeunload', function() {
         clearInterval(refreshInterval);
     }
 });
+
+
+// ========================
+// УПРАВЛЕНИЕ МЕРОПРИЯТИЯМИ (EVENTS)
+// ========================
+
+// Переключение между подвкладками мероприятий
+function showEventTab(tabName) {
+    // Скрываем все панели
+    document.querySelectorAll('.event-pane').forEach(pane => {
+        pane.style.display = 'none';
+    });
+
+    // Убираем активный класс у всех кнопок
+    document.querySelectorAll('.event-tab').forEach(tab => {
+        tab.classList.remove('active');
+    });
+
+    // Показываем выбранную панель
+    document.getElementById(tabName).style.display = 'block';
+
+    // Активируем кнопку
+    event.target.classList.add('active');
+
+    // Загружаем данные
+    if (tabName === 'eventsList') loadEvents();
+    if (tabName === 'eventsProducts') loadEventsProducts();
+    if (tabName === 'eventsPrints') loadEventsPrints();
+}
+
+// ========== МЕРОПРИЯТИЯ (EventsList) ==========
+
+// Загрузка списка мероприятий
+async function loadEvents() {
+    try {
+        const response = await fetch('/api/admin/events/');
+        const data = await response.json();
+
+        const tbody = document.getElementById('eventsListBody');
+
+        if (!data.success) {
+            tbody.innerHTML = `<tr><td colspan="4" style="text-align: center; padding: 40px;">Ошибка: ${data.error}</td></tr>`;
+            return;
+        }
+
+        if (data.events.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="4" style="text-align: center; padding: 40px;">Мероприятия не найдены</td></tr>';
+            return;
+        }
+
+        // Фильтрация по поиску
+        let filtered = data.events;
+        const search = document.getElementById('eventSearch')?.value.toLowerCase();
+        if (search) {
+            filtered = filtered.filter(e => e.event_name.toLowerCase().includes(search));
+        }
+
+        let html = '';
+        filtered.forEach(event => {
+            const statusClass = event.is_active ? 'badge-active' : 'badge-inactive';
+            const statusText = event.is_active ? 'Активно' : 'Неактивно';
+
+            html += `
+                <tr>
+                    <td>${event.id}</td>
+                    <td><strong>${escapeHtml(event.event_name)}</strong></td>
+                    <td><span class="${statusClass}">${statusText}</span></td>
+                    <td>
+                        <button class="action-btn btn-edit" onclick="editEvent(${event.id}, '${escapeHtml(event.event_name)}', ${event.is_active})">
+                            ✏️ Редактировать
+                        </button>
+                        ${!event.is_active ? `
+                            <button class="action-btn btn-success" onclick="setActiveEvent(${event.id})">
+                                ⭐ Сделать активным
+                            </button>
+                        ` : ''}
+                        <button class="action-btn btn-delete" onclick="deleteEvent(${event.id})">
+                            🗑️ Удалить
+                        </button>
+                    </td>
+                </tr>
+            `;
+        });
+
+        tbody.innerHTML = html;
+
+    } catch (error) {
+        console.error('Ошибка загрузки мероприятий:', error);
+        document.getElementById('eventsListBody').innerHTML =
+            `<tr><td colspan="4" style="text-align: center; padding: 40px;">Ошибка загрузки: ${error.message}</td></tr>`;
+    }
+}
+
+// Показать модальное окно для добавления мероприятия
+function showAddEventModal() {
+    document.getElementById('eventModalTitle').textContent = 'Добавление мероприятия';
+    document.getElementById('eventId').value = '';
+    document.getElementById('eventName').value = '';
+    document.getElementById('eventIsActive').checked = false;
+    openModal('eventModal');
+}
+
+// Редактирование мероприятия
+function editEvent(id, name, isActive) {
+    document.getElementById('eventModalTitle').textContent = 'Редактирование мероприятия';
+    document.getElementById('eventId').value = id;
+    document.getElementById('eventName').value = name;
+    document.getElementById('eventIsActive').checked = isActive;
+    openModal('eventModal');
+}
+
+// Сохранение мероприятия (добавление или редактирование)
+async function saveEvent(event) {
+    event.preventDefault();
+
+    const id = document.getElementById('eventId').value;
+    const name = document.getElementById('eventName').value.trim();
+    const isActive = document.getElementById('eventIsActive').checked;
+
+    if (!name) {
+        alert('Введите название мероприятия');
+        return;
+    }
+
+    const url = id ? `/api/admin/events/${id}/update/` : '/api/admin/events/add/';
+    const method = 'POST';
+
+    try {
+        const response = await fetch(url, {
+            method: method,
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCSRFToken()
+            },
+            body: JSON.stringify({
+                event_name: name,
+                is_active: isActive
+            })
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+            alert(data.message);
+            closeModal('eventModal');
+            loadEvents();
+        } else {
+            alert('Ошибка: ' + data.error);
+        }
+
+    } catch (error) {
+        console.error('Ошибка сохранения мероприятия:', error);
+        alert('Ошибка: ' + error.message);
+    }
+}
+
+// Установить мероприятие активным
+async function setActiveEvent(eventId) {
+    if (!confirm('Сделать это мероприятие активным? Текущее активное мероприятие будет деактивировано.')) return;
+
+    try {
+        const response = await fetch(`/api/admin/events/${eventId}/set-active/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': getCSRFToken()
+            }
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+            alert(data.message);
+            loadEvents();
+        } else {
+            alert('Ошибка: ' + data.error);
+        }
+
+    } catch (error) {
+        console.error('Ошибка активации мероприятия:', error);
+        alert('Ошибка: ' + error.message);
+    }
+}
+
+// Удаление мероприятия
+async function deleteEvent(eventId) {
+    if (!confirm('Удалить мероприятие? Это действие нельзя отменить.')) return;
+
+    try {
+        const response = await fetch(`/api/admin/events/${eventId}/delete/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': getCSRFToken()
+            }
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+            alert(data.message);
+            loadEvents();
+        } else {
+            alert('Ошибка: ' + data.error);
+        }
+
+    } catch (error) {
+        console.error('Ошибка удаления мероприятия:', error);
+        alert('Ошибка: ' + error.message);
+    }
+}
+
+// ========== ТОВАРЫ МЕРОПРИЯТИЙ (EventsProducts) ==========
+
+// Загрузка товаров мероприятий
+async function loadEventsProducts() {
+    try {
+        const filter = document.getElementById('eventProductFilter')?.value || 'all';
+        const search = document.getElementById('eventProductSearch')?.value || '';
+
+        let url = '/api/admin/events-products/';
+        const params = [];
+        if (filter && filter !== 'all') params.push(`event_id=${filter}`);
+        if (search) params.push(`search=${encodeURIComponent(search)}`);
+        if (params.length) url += '?' + params.join('&');
+
+        const response = await fetch(url);
+        const data = await response.json();
+
+        const tbody = document.getElementById('eventsProductsBody');
+
+        if (!data.success) {
+            tbody.innerHTML = `<tr><td colspan="7" style="text-align: center; padding: 40px;">Ошибка: ${data.error}</td></tr>`;
+            return;
+        }
+
+        if (data.items.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; padding: 40px;">Товары мероприятий не найдены</td></tr>';
+            return;
+        }
+
+        let html = '';
+        data.items.forEach(item => {
+            html += `
+                <tr>
+                    <td>${item.id}</td>
+                    <td>${escapeHtml(item.event_name)}</td>
+                    <td>${escapeHtml(item.product_name || '—')}</td>
+                    <td>${escapeHtml(item.product_model || '—')}</td>
+                    <td>${escapeHtml(item.product_color || '—')}</td>
+                    <td>${escapeHtml(item.product_size || '—')}</td>
+                    <td>
+                        <button class="action-btn btn-delete" onclick="deleteEventProduct(${item.id})">
+                            🗑️ Удалить
+                        </button>
+                    </td>
+                </tr>
+            `;
+        });
+
+        tbody.innerHTML = html;
+
+    } catch (error) {
+        console.error('Ошибка загрузки товаров мероприятий:', error);
+        document.getElementById('eventsProductsBody').innerHTML =
+            `<tr><td colspan="7" style="text-align: center; padding: 40px;">Ошибка загрузки: ${error.message}</td></tr>`;
+    }
+}
+
+// Загрузка списка мероприятий для селекта
+async function loadEventsForSelect(selectId) {
+    try {
+        const response = await fetch('/api/admin/events/');
+        const data = await response.json();
+
+        const select = document.getElementById(selectId);
+        if (!select) return;
+
+        select.innerHTML = '<option value="">Выберите мероприятие</option>';
+
+        if (data.success && data.events) {
+            data.events.forEach(event => {
+                const option = document.createElement('option');
+                option.value = event.id;
+                option.textContent = event.event_name;
+                select.appendChild(option);
+            });
+        }
+
+    } catch (error) {
+        console.error('Ошибка загрузки мероприятий для селекта:', error);
+    }
+}
+
+// Загрузка списка товаров для селекта
+async function loadProductsForSelect() {
+    try {
+        const response = await fetch('/api/admin/products/');
+        const data = await response.json();
+
+        const select = document.getElementById('productSelect');
+        if (!select) return;
+
+        select.innerHTML = '<option value="">Выберите товар</option>';
+
+        if (data.success && data.products) {
+            data.products.forEach(product => {
+                const option = document.createElement('option');
+                option.value = product.id;
+                option.textContent = `${product.model} (${product.color}, ${product.size})`;
+                select.appendChild(option);
+            });
+        }
+
+    } catch (error) {
+        console.error('Ошибка загрузки товаров для селекта:', error);
+    }
+}
+
+// Показать модальное окно для добавления товара в мероприятие
+async function showAddEventProductModal() {
+    await loadEventsForSelect('eventSelect');
+    await loadProductsForSelect();
+    openModal('eventProductModal');
+}
+
+// Добавление товара в мероприятие
+async function addEventProduct(event) {
+    event.preventDefault();
+
+    const eventId = document.getElementById('eventSelect').value;
+    const productId = document.getElementById('productSelect').value;
+
+    if (!eventId || !productId) {
+        alert('Выберите мероприятие и товар');
+        return;
+    }
+
+    try {
+        const response = await fetch('/api/admin/events-products/add/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCSRFToken()
+            },
+            body: JSON.stringify({
+                event_id: parseInt(eventId),
+                product_id: parseInt(productId)
+            })
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+            alert(data.message);
+            closeModal('eventProductModal');
+            loadEventsProducts();
+        } else {
+            alert('Ошибка: ' + data.error);
+        }
+
+    } catch (error) {
+        console.error('Ошибка добавления товара в мероприятие:', error);
+        alert('Ошибка: ' + error.message);
+    }
+}
+
+// Удаление товара из мероприятия
+async function deleteEventProduct(itemId) {
+    if (!confirm('Удалить товар из мероприятия?')) return;
+
+    try {
+        const response = await fetch(`/api/admin/events-products/${itemId}/delete/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': getCSRFToken()
+            }
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+            alert(data.message);
+            loadEventsProducts();
+        } else {
+            alert('Ошибка: ' + data.error);
+        }
+
+    } catch (error) {
+        console.error('Ошибка удаления товара из мероприятия:', error);
+        alert('Ошибка: ' + error.message);
+    }
+}
+
+// ========== ПРИНТЫ МЕРОПРИЯТИЙ (EventsPrints) ==========
+
+// Загрузка принтов мероприятий
+async function loadEventsPrints() {
+    try {
+        const filter = document.getElementById('eventPrintFilter')?.value || 'all';
+        const search = document.getElementById('eventPrintSearch')?.value || '';
+
+        let url = '/api/admin/events-prints/';
+        const params = [];
+        if (filter && filter !== 'all') params.push(`event_id=${filter}`);
+        if (search) params.push(`search=${encodeURIComponent(search)}`);
+        if (params.length) url += '?' + params.join('&');
+
+        const response = await fetch(url);
+        const data = await response.json();
+
+        const tbody = document.getElementById('eventsPrintsBody');
+
+        if (!data.success) {
+            tbody.innerHTML = `<tr><td colspan="5" style="text-align: center; padding: 40px;">Ошибка: ${data.error}</td></tr>`;
+            return;
+        }
+
+        if (data.items.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; padding: 40px;">Принты мероприятий не найдены</td></tr>';
+            return;
+        }
+
+        let html = '';
+        data.items.forEach(item => {
+            html += `
+                <tr>
+                    <td>${item.id}</td>
+                    <td>${escapeHtml(item.event_name)}</td>
+                    <td>${escapeHtml(item.print_name)}</td>
+                    <td>${item.print_file ? `<a href="${item.print_file}" target="_blank" style="color: #00bcd4;">📷 Файл</a>` : '—'}</td>
+                    <td>
+                        <button class="action-btn btn-delete" onclick="deleteEventPrint(${item.id})">
+                            🗑️ Удалить
+                        </button>
+                    </td>
+                </tr>
+            `;
+        });
+
+        tbody.innerHTML = html;
+
+    } catch (error) {
+        console.error('Ошибка загрузки принтов мероприятий:', error);
+        document.getElementById('eventsPrintsBody').innerHTML =
+            `<tr><td colspan="5" style="text-align: center; padding: 40px;">Ошибка загрузки: ${error.message}</td></tr>`;
+    }
+}
+
+// Загрузка списка принтов для селекта
+async function loadPrintsForSelect() {
+    try {
+        const response = await fetch('/api/admin/prints/');
+        const data = await response.json();
+
+        const select = document.getElementById('printSelect');
+        if (!select) return;
+
+        select.innerHTML = '<option value="">Выберите принт</option>';
+
+        if (data.success && data.prints) {
+            data.prints.forEach(print => {
+                const option = document.createElement('option');
+                option.value = print.id;
+                option.textContent = print.name;
+                select.appendChild(option);
+            });
+        }
+
+    } catch (error) {
+        console.error('Ошибка загрузки принтов для селекта:', error);
+    }
+}
+
+// Показать модальное окно для добавления принта в мероприятие
+async function showAddEventPrintModal() {
+    await loadEventsForSelect('eventSelectForPrint');
+    await loadPrintsForSelect();
+    openModal('eventPrintModal');
+}
+
+// Добавление принта в мероприятие
+async function addEventPrint(event) {
+    event.preventDefault();
+
+    const eventId = document.getElementById('eventSelectForPrint').value;
+    const printId = document.getElementById('printSelect').value;
+
+    if (!eventId || !printId) {
+        alert('Выберите мероприятие и принт');
+        return;
+    }
+
+    try {
+        const response = await fetch('/api/admin/events-prints/add/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCSRFToken()
+            },
+            body: JSON.stringify({
+                event_id: parseInt(eventId),
+                print_id: parseInt(printId)
+            })
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+            alert(data.message);
+            closeModal('eventPrintModal');
+            loadEventsPrints();
+        } else {
+            alert('Ошибка: ' + data.error);
+        }
+
+    } catch (error) {
+        console.error('Ошибка добавления принта в мероприятие:', error);
+        alert('Ошибка: ' + error.message);
+    }
+}
+
+// Удаление принта из мероприятия
+async function deleteEventPrint(itemId) {
+    if (!confirm('Удалить принт из мероприятия?')) return;
+
+    try {
+        const response = await fetch(`/api/admin/events-prints/${itemId}/delete/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': getCSRFToken()
+            }
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+            alert(data.message);
+            loadEventsPrints();
+        } else {
+            alert('Ошибка: ' + data.error);
+        }
+
+    } catch (error) {
+        console.error('Ошибка удаления принта из мероприятия:', error);
+        alert('Ошибка: ' + error.message);
+    }
+}
+
+// Функция экранирования HTML (если еще не определена)
+function escapeHtml(text) {
+    if (!text) return '';
+    const map = {
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#039;'
+    };
+    return text.toString().replace(/[&<>"']/g, function(m) { return map[m]; });
+}

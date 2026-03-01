@@ -414,6 +414,7 @@
             <button class="tab" onclick="showTab('prints')">🖨️ Принты</button>
             <button class="tab" onclick="showTab('users')">👥 Сотрудники</button>
             <button class="tab" onclick="showTab('statistics')">📊 Статистика</button>
+            <button class="tab" onclick="showTab('events')">🎪 Мероприятия</button>
         </div>
 
         <!-- Контент вкладок -->
@@ -704,6 +705,179 @@
 
                 <div class="timestamp" id="statTimestamp"></div>
             </div>
+
+            <!-- Вкладка МЕРОПРИЯТИЯ (новая) -->
+<div id="events" class="tab-pane">
+    <h2 class="section-title">Управление мероприятиями</h2>
+
+    <!-- Подвкладки для трех таблиц -->
+    <div class="tabs" style="margin-bottom: 20px; background: #0f3460;">
+        <button class="tab event-tab active" onclick="showEventTab('eventsList')">📋 Мероприятия</button>
+        <button class="tab event-tab" onclick="showEventTab('eventsProducts')">👕 Товары мероприятий</button>
+        <button class="tab event-tab" onclick="showEventTab('eventsPrints')">🖨️ Принты мероприятий</button>
+    </div>
+
+    <!-- ========== ТАБЛИЦА 1: МЕРОПРИЯТИЯ (EventsList) ========== -->
+    <div id="eventsList" class="event-pane" style="display: block;">
+        <div class="search-panel">
+            <input type="text" id="eventSearch" class="search-input" placeholder="🔍 Поиск по названию мероприятия...">
+            <button class="action-btn btn-success" onclick="showAddEventModal()">➕ Добавить мероприятие</button>
+            <span class="filter-select" style="background: #0f3460; color: #aaa; border: none; padding: 10px; display: inline-block;">
+                ⚠️ Активным может быть только одно мероприятие
+            </span>
+        </div>
+
+        <div style="overflow-x: auto;">
+            <table class="data-table" id="eventsListTable">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Название мероприятия</th>
+                        <th>Статус</th>
+                        <th>Действия</th>
+                    </tr>
+                </thead>
+                <tbody id="eventsListBody">
+                    <tr><td colspan="4" style="text-align: center; padding: 40px;">Загрузка мероприятий...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- ========== ТАБЛИЦА 2: ТОВАРЫ МЕРОПРИЯТИЙ (EventsProducts) ========== -->
+    <div id="eventsProducts" class="event-pane" style="display: none;">
+        <div class="search-panel">
+            <select id="eventProductFilter" class="filter-select" onchange="loadEventsProducts()">
+                <option value="all">Все мероприятия</option>
+            </select>
+            <input type="text" id="eventProductSearch" class="search-input" placeholder="🔍 Поиск по товару...">
+            <button class="action-btn btn-success" onclick="showAddEventProductModal()">➕ Добавить товар в мероприятие</button>
+        </div>
+
+        <div style="overflow-x: auto;">
+            <table class="data-table" id="eventsProductsTable">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Мероприятие</th>
+                        <th>Товар</th>
+                        <th>Модель</th>
+                        <th>Цвет</th>
+                        <th>Размер</th>
+                        <th>Действия</th>
+                    </tr>
+                </thead>
+                <tbody id="eventsProductsBody">
+                    <tr><td colspan="7" style="text-align: center; padding: 40px;">Загрузка товаров мероприятий...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- ========== ТАБЛИЦА 3: ПРИНТЫ МЕРОПРИЯТИЙ (EventsPrints) ========== -->
+    <div id="eventsPrints" class="event-pane" style="display: none;">
+        <div class="search-panel">
+            <select id="eventPrintFilter" class="filter-select" onchange="loadEventsPrints()">
+                <option value="all">Все мероприятия</option>
+            </select>
+            <input type="text" id="eventPrintSearch" class="search-input" placeholder="🔍 Поиск по принту...">
+            <button class="action-btn btn-success" onclick="showAddEventPrintModal()">➕ Добавить принт в мероприятие</button>
+        </div>
+
+        <div style="overflow-x: auto;">
+            <table class="data-table" id="eventsPrintsTable">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Мероприятие</th>
+                        <th>Принт</th>
+                        <th>Файл</th>
+                        <th>Действия</th>
+                    </tr>
+                </thead>
+                <tbody id="eventsPrintsBody">
+                    <tr><td colspan="5" style="text-align: center; padding: 40px;">Загрузка принтов мероприятий...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- МОДАЛЬНЫЕ ОКНА ДЛЯ МЕРОПРИЯТИЙ -->
+
+<!-- Модальное окно для добавления/редактирования мероприятия -->
+<div id="eventModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2 id="eventModalTitle">Добавление мероприятия</h2>
+            <button class="modal-close" onclick="closeModal('eventModal')">&times;</button>
+        </div>
+        <form id="eventForm" onsubmit="saveEvent(event)">
+            <input type="hidden" id="eventId" value="">
+            <div class="form-group">
+                <label>Название мероприятия</label>
+                <input type="text" id="eventName" class="form-control" required>
+            </div>
+            <div class="form-group">
+                <label>
+                    <input type="checkbox" id="eventIsActive"> Активное мероприятие
+                </label>
+                <p style="color: #aaa; font-size: 12px; margin-top: 5px;">⚠️ Только одно мероприятие может быть активным</p>
+            </div>
+            <button type="submit" class="action-btn btn-success" style="width: 100%; padding: 12px;">Сохранить</button>
+        </form>
+    </div>
+</div>
+
+<!-- Модальное окно для добавления товара в мероприятие -->
+<div id="eventProductModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2>Добавление товара в мероприятие</h2>
+            <button class="modal-close" onclick="closeModal('eventProductModal')">&times;</button>
+        </div>
+        <form id="eventProductForm" onsubmit="addEventProduct(event)">
+            <div class="form-group">
+                <label>Мероприятие</label>
+                <select id="eventSelect" class="form-control" required>
+                    <option value="">Выберите мероприятие</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Товар</label>
+                <select id="productSelect" class="form-control" required>
+                    <option value="">Выберите товар</option>
+                </select>
+            </div>
+            <button type="submit" class="action-btn btn-success" style="width: 100%; padding: 12px;">Добавить</button>
+        </form>
+    </div>
+</div>
+
+<!-- Модальное окно для добавления принта в мероприятие -->
+<div id="eventPrintModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2>Добавление принта в мероприятие</h2>
+            <button class="modal-close" onclick="closeModal('eventPrintModal')">&times;</button>
+        </div>
+        <form id="eventPrintForm" onsubmit="addEventPrint(event)">
+            <div class="form-group">
+                <label>Мероприятие</label>
+                <select id="eventSelectForPrint" class="form-control" required>
+                    <option value="">Выберите мероприятие</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Принт</label>
+                <select id="printSelect" class="form-control" required>
+                    <option value="">Выберите принт</option>
+                </select>
+            </div>
+            <button type="submit" class="action-btn btn-success" style="width: 100%; padding: 12px;">Добавить</button>
+        </form>
+    </div>
+</div>
         </div>
     </div>
 

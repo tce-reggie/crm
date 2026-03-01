@@ -100,4 +100,21 @@ urlpatterns = [
     path('api/admin/session/resume/', views.api_admin_resume_session, name='api_admin_resume_session'),
     path('api/admin/session/restart/', views.api_admin_restart_session, name='api_admin_restart_session'),
     path('api/admin/session/print-label/', views.api_admin_print_session_label, name='api_admin_print_label'),
+
+    # Events API endpoints
+    path('api/admin/events/', views.api_admin_events, name='api_admin_events'),
+    path('api/admin/events/add/', views.api_admin_add_event, name='api_admin_add_event'),
+    path('api/admin/events/<int:event_id>/update/', views.api_admin_update_event, name='api_admin_update_event'),
+    path('api/admin/events/<int:event_id>/set-active/', views.api_admin_set_active_event, name='api_admin_set_active'),
+    path('api/admin/events/<int:event_id>/delete/', views.api_admin_delete_event, name='api_admin_delete_event'),
+
+    # EventsProducts API
+    path('api/admin/events-products/', views.api_admin_events_products, name='api_admin_events_products'),
+    path('api/admin/events-products/add/', views.api_admin_add_event_product, name='api_admin_add_event_product'),
+    path('api/admin/events-products/<int:item_id>/delete/', views.api_admin_delete_event_product,name='api_admin_delete_event_product'),
+
+    # EventsPrints API
+    path('api/admin/events-prints/', views.api_admin_events_prints, name='api_admin_events_prints'),
+    path('api/admin/events-prints/add/', views.api_admin_add_event_print, name='api_admin_add_event_print'),
+    path('api/admin/events-prints/<int:item_id>/delete/', views.api_admin_delete_event_print,name='api_admin_delete_event_print'),
 ]
