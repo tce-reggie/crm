@@ -15,12 +15,12 @@ sudo cp /vagrant/docker/.env.example .env
 # Запустите
 sudo docker-compose up -d --build
 
-# Проверьте
+# Проверка контейнеров
 sudo docker-compose ps
 
 для отключения и очистки содержимого вм :
+exit
 cd ~/PycharmProjects/tce-reggie/crm/shop
-
 
 # Остановите VM
 vagrant halt

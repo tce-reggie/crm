@@ -73,6 +73,12 @@ mkdir -p /opt/event-system/data/sqlite   # Для SQLite
 mkdir -p /opt/event-system/data/postgres # На будущее
 mkdir -p /opt/event-system/logs
 
+if [ -f /vagrant/data/db.sqlite3 ]; then
+    echo " Копирование базы данных..."
+    cp /vagrant/data/db.sqlite3 /opt/event-system/data/sqlite/db.sqlite3
+    chmod 666 /opt/event-system/data/sqlite/db.sqlite3
+fi
+
 # Настройка прав
 chown -R vagrant:vagrant /opt/event-system
 
