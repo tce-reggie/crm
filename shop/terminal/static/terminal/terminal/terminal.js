@@ -661,7 +661,7 @@ function switchArea(areaId, config) {
     updateCurrentPrintsList();
 }
 
-// Создание элемента принта
+// Создание элемента принта (исправить настройку размеров принта!!!!)
 function createPrintElement(print) {
     console.log('createPrintElement для принта:', print);
 
@@ -799,7 +799,7 @@ async function loadStep4Data(productId) {
 }
 
 function clearAllPrints() {
-    areaPrints = {};
+    orderPrints = {};
     selectedPrintElement = null;
     currentAreaId = null;
     currentAreaConfig = null;
@@ -935,8 +935,8 @@ async function loadPrintAreas(productId) {
                 // При клике на вкладку показываем эту зону
                 console.log('Выбрана зона:', area);
                 switchArea(area.id, {
-                    width: area.width,          // ширина зоны в см
-                    height: area.height,        // высота зоны в см
+                    width: area.width,          // ширина зоны
+                    height: area.height,        // высота зоны
                     maxPrints: area.max_prints, // максимум принтов
                     imageUrl: area.image_url,   // изображение зоны
                     offsetX: area.offset_x || 0, // отступ слева
@@ -1114,8 +1114,8 @@ function selectPrint(id, name, imageUrl) {
         imageUrl: imageUrl || null,
         x: 50,
         y: 50,
-        width: 100,
-        height: 100,
+        width: 10,
+        height: 10,
         areaId: currentAreaId,
         isSaved: false,
         isCustomText: false
@@ -1144,7 +1144,7 @@ function renderAreaPrints() {
     if (prints.length === 0) {
         const hint = document.createElement('div');
         hint.className = 'print-area-hint';
-        hint.innerHTML = 'Выберите принт справа<br><span style="font-size:0.8em;">Перетащите его в область</span>';
+        hint.innerHTML = 'Выберите принт снизу<br><span style="font-size:0.8em;">Перетащите его в область</span>';
         printArea.appendChild(hint);
         return;
     }
@@ -1345,8 +1345,8 @@ function saveAllPrints() {
     console.log('=== saveAllPrints ===');
 
     // 1. Проверяем пересечения (если есть принты)
-    const totalPrints = Object.values(orderPrints).reduce((sum, areaPrints) =>
-        sum + (areaPrints ? areaPrints.length : 0), 0);
+    const totalPrints = Object.values(orderPrints).reduce((sum, orderPrints) =>
+        sum + (orderPrints ? orderPrints.length : 0), 0);
 
     if (totalPrints > 0) {
         const intersections = checkAllPrintIntersections();
