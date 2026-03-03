@@ -31,14 +31,6 @@ urlpatterns = [
     path('api/reception/orders/<int:order_id>/confirm/', views.api_reception_confirm_order, name='api_reception_confirm_order'),
     path('api/reception/orders/<int:order_id>/cancel/', views.api_reception_cancel_order, name='api_reception_cancel_order'),
 
-    # Компоновка
-    path('composing/', views.composing_interface, name='composing_interface'),
-    # API для компоновки
-    path('api/composing/orders/new/', views.api_composing_get_new_order, name='api_composing_new_order'),
-    path('api/composing/orders/current/', views.api_composing_get_current_order, name='api_composing_current_order'),
-    path('api/composing/orders/<int:order_id>/complete/', views.api_composing_complete_order, name='api_composing_complete_order'),
-    path('api/composing/orders/<int:order_id>/cancel/', views.api_composing_cancel_order, name='api_composing_cancel_order'),
-
 
 
     path('printing/', views.printing_interface, name='printing_interface'),

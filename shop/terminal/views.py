@@ -75,13 +75,6 @@ def reception_interface(request):
         'userlogin': request.session.get('login'),
     })
 
-@interface_required('composing')
-def composing_interface(request):
-    """Главный интерфейс компоновки"""
-    return render(request, 'composing/composing_interface.html', {
-        'userlogin': request.session.get('login'),
-    })
-
 @interface_required('printing')
 def printing_interface(request):
     """Главный интерфейс печати"""
@@ -701,36 +694,72 @@ def api_reception_order_detail(request, order_id):
 def api_reception_confirm_order(request, order_id):
     """Подтверждение заказа оператором"""
     try:
+        # 1. Получаем данные и заказ
         data = json.loads(request.body)
         order = get_object_or_404(Order, order_id=order_id)
 
-        # Проверяем, можно ли подтвердить заказ
+        # 2. Проверяем авторизацию (аналогично примеру api_printing_complete_order)
+        user_id = request.session.get('user_id')
+        if not user_id:
+            return JsonResponse({
+                'success': False,
+                'error': 'Не авторизован'
+            }, status=401)
+
+        try:
+            user = User.objects.get(id=user_id)
+        except User.DoesNotExist:
+            return JsonResponse({
+                'success': False,
+                'error': 'Пользователь не найден'
+            }, status=404)
+
+        # 3. Проверяем, можно ли подтвердить заказ
         if order.status != 'new':
             return JsonResponse({
                 'success': False,
                 'error': f'Заказ уже имеет статус: {order.get_status_display()}'
             }, status=400)
 
-        # Обновляем статус
+        # 4. Обновляем статус заказа
         order.status = 'confirmed'
         order.save()
 
+        # 5. Создаем запись в OrderAssignment
+        current_time = timezone.now()
+
+        OrderAssignment.objects.create(
+            order=order,
+            worker=user,
+            interface='reception',  # Графа интерфейс
+            status='completed',  # Статус выполнения
+            started_at=current_time,  # Время начала
+            finished_at=current_time,  # Время окончания (одинаковое с началом)
+            notes='Автоматическое подтверждение приема заказа'
+        )
+
         # Логируем действие
-        print(f"Заказ #{order_id} подтвержден оператором")
+        print(f"Заказ #{order_id} подтвержден оператором {user.employee_name}. Запись в назначениях создана.")
 
         return JsonResponse({
             'success': True,
-            'message': 'Заказ успешно подтвержден',
+            'message': 'Заказ успешно подтвержден и назначен',
             'new_status': order.status,
             'new_status_display': order.get_status_display()
         })
 
+    except json.JSONDecodeError:
+        return JsonResponse({
+            'success': False,
+            'error': 'Неверный формат JSON'
+        }, status=400)
     except Exception as e:
         print(f"ERROR api_reception_confirm_order: {str(e)}")
         return JsonResponse({
             'success': False,
             'error': str(e)
         }, status=500)
+
 
 @csrf_exempt
 @require_POST
@@ -770,288 +799,6 @@ def api_reception_cancel_order(request, order_id):
             'error': str(e)
         }, status=500)
 
-
-# =========================
-# COMPOSING API ENDPOINTS
-# =========================
-@csrf_exempt
-def api_composing_get_new_order(request):
-    """Получение нового заказа для компоновки"""
-    try:
-        # Получаем ID текущего пользователя
-        user_id = request.session.get('user_id')
-        if not user_id:
-            return JsonResponse({'success': False, 'error': 'Не авторизован'})
-
-        user = User.objects.get(id=user_id)
-
-        # Проверяем, есть ли у пользователя уже заказ в работе
-        active_assignment = OrderAssignment.objects.filter(
-            worker=user,
-            status='in_progress',
-            interface='composing'
-        ).first()
-
-        if active_assignment:
-            # У пользователя уже есть заказ в работе
-            order = active_assignment.order
-            prints = OrderPrint.objects.filter(order=order).select_related('area')
-
-            order_data = {
-                'id': order.order_id,
-                'order_number': f"ORD{order.order_id:06d}",
-                'customer_name': order.customer_name,
-                'phone_number': order.phone_number,
-                'status': 'in_progress',
-                'status_display': 'В работе',
-                'created_date': order.created_date.strftime('%d.%m.%Y %H:%M'),
-                'product': {
-                    'model': order.product.model,
-                    'color': order.product.color,
-                    'size': order.product.size,
-                },
-                'prints': [
-                    {
-                        'id': op.order_print_id,
-                        'content': op.print_design,
-                        'area_name': op.area.area_name if op.area else 'Неизвестно',
-                        'position_x': float(op.position_x),
-                        'position_y': float(op.position_y),
-                    }
-                    for op in prints
-                ],
-            }
-
-            return JsonResponse({
-                'success': True,
-                'order': order_data,
-                'worker_id': user_id,
-                'assignment_id': active_assignment.assignment_id,
-                'has_active_order': True
-            })
-
-        # Ищем заказ со статусом 'confirmed' без активных назначений
-        confirmed_orders = Order.objects.filter(
-            status='confirmed'
-        ).exclude(
-            assignments__status='in_progress'
-        ).select_related('product').order_by('created_date')
-
-        order = confirmed_orders.first()
-
-        if not order:
-            return JsonResponse({
-                'success': False,
-                'error': 'Нет доступных заказов'
-            })
-
-        # Создаем назначение заказа сотруднику (сразу in_progress)
-        assignment = OrderAssignment.objects.create(
-            order=order,
-            worker=user,
-            interface='composing',
-            status='in_progress'  # Сразу в работе
-        )
-
-        # Получаем принты для этого заказа
-        prints = OrderPrint.objects.filter(order=order).select_related('area')
-
-        order_data = {
-            'id': order.order_id,
-            'order_number': f"ORD{order.order_id:06d}",
-            'customer_name': order.customer_name,
-            'phone_number': order.phone_number,
-            'status': 'in_progress',
-            'status_display': 'В работе',
-            'created_date': order.created_date.strftime('%d.%m.%Y %H:%M'),
-            'product': {
-                'model': order.product.model,
-                'color': order.product.color,
-                'size': order.product.size,
-            },
-            'prints': [
-                {
-                    'id': op.order_print_id,
-                    'content': op.print_design,
-                    'area_name': op.area.area_name if op.area else 'Неизвестно',
-                    'position_x': float(op.position_x),
-                    'position_y': float(op.position_y),
-                }
-                for op in prints
-            ],
-        }
-
-        return JsonResponse({
-            'success': True,
-            'order': order_data,
-            'worker_id': user_id,
-            'assignment_id': assignment.assignment_id,
-            'has_active_order': True
-        })
-
-    except Exception as e:
-        print(f"ERROR api_composing_get_new_order: {str(e)}")
-        return JsonResponse({
-            'success': False,
-            'error': str(e)
-        }, status=500)
-
-@csrf_exempt
-def api_composing_get_current_order(request):
-    """Получение текущего заказа в работе у пользователя"""
-    try:
-        user_id = request.session.get('user_id')
-        if not user_id:
-            return JsonResponse({'success': False, 'error': 'Не авторизован'})
-
-        user = User.objects.get(id=user_id)
-
-        # Ищем заказ в работе у пользователя
-        active_assignment = OrderAssignment.objects.filter(
-            worker=user,
-            status='in_progress',
-            interface='composing'
-        ).select_related('order', 'order__product').first()
-
-        if not active_assignment:
-            return JsonResponse({'success': True, 'order': None})
-
-        order = active_assignment.order
-        prints = OrderPrint.objects.filter(order=order).select_related('area')
-
-        order_data = {
-            'id': order.order_id,
-            'order_number': f"ORD{order.order_id:06d}",
-            'customer_name': order.customer_name,
-            'phone_number': order.phone_number,
-            'status': 'in_progress',
-            'status_display': 'В работе',
-            'created_date': order.created_date.strftime('%d.%m.%Y %H:%M'),
-            'product': {
-                'model': order.product.model,
-                'color': order.product.color,
-                'size': order.product.size,
-            },
-            'prints': [
-                {
-                    'id': op.order_print_id,
-                    'content': op.print_design,
-                    'area_name': op.area.area_name if op.area else 'Неизвестно',
-                    'position_x': float(op.position_x),
-                    'position_y': float(op.position_y),
-                }
-                for op in prints
-            ],
-        }
-
-        return JsonResponse({
-            'success': True,
-            'order': order_data,
-            'worker_id': user_id,
-            'assignment_id': active_assignment.assignment_id
-        })
-
-    except Exception as e:
-        print(f"ERROR api_composing_get_current_order: {str(e)}")
-        return JsonResponse({
-            'success': False,
-            'error': str(e)
-        }, status=500)
-
-@csrf_exempt
-@require_POST
-def api_composing_complete_order(request, order_id):
-    """Завершение компоновки заказа"""
-    try:
-        user_id = request.session.get('user_id')
-        if not user_id:
-            return JsonResponse({'success': False, 'error': 'Не авторизован'})
-
-        user = User.objects.get(id=user_id)
-
-        # Ищем активное назначение
-        assignment = OrderAssignment.objects.filter(
-            order_id=order_id,
-            worker=user,
-            interface='composing',
-            status='in_progress'
-        ).first()
-
-        if not assignment:
-            return JsonResponse({
-                'success': False,
-                'error': 'Заказ не находится у вас в работе'
-            })
-
-        # Завершаем работу успешно
-        assignment.complete_work()
-
-        # Меняем статус заказа на 'composed'
-        order = assignment.order
-        order.status = 'composed'
-        order.save()
-
-        print(f"Заказ #{order_id} собран сотрудником {user.employee_name}")
-
-        return JsonResponse({
-            'success': True,
-            'message': 'Заказ успешно собран',
-            'new_status': order.status,
-            'new_status_display': order.get_status_display()
-        })
-
-    except Exception as e:
-        print(f"ERROR api_composing_complete_order: {str(e)}")
-        return JsonResponse({
-            'success': False,
-            'error': str(e)
-        }, status=500)
-
-@csrf_exempt
-@require_POST
-def api_composing_cancel_order(request, order_id):
-    """Возврат заказа в очередь"""
-    try:
-        data = json.loads(request.body)
-        cancel_reason = data.get('reason', 'Возвращено компоновщиком')
-
-        user_id = request.session.get('user_id')
-        if not user_id:
-            return JsonResponse({'success': False, 'error': 'Не авторизован'})
-
-        user = User.objects.get(id=user_id)
-
-        # Ищем активное назначение
-        assignment = OrderAssignment.objects.filter(
-            order_id=order_id,
-            worker=user,
-            interface='composing',
-            status='in_progress'
-        ).first()
-
-        if not assignment:
-            return JsonResponse({
-                'success': False,
-                'error': 'Заказ не находится у вас в работе'
-            })
-
-        # Отменяем работу
-        assignment.cancel_work(notes=cancel_reason)
-
-        print(f"Заказ #{order_id} отменен сотрудником {user.employee_name}. Причина: {cancel_reason}")
-
-        return JsonResponse({
-            'success': True,
-            'message': 'Заказ возвращен в очередь',
-            'assignment_status': assignment.status
-        })
-
-    except Exception as e:
-        print(f"ERROR api_composing_cancel_order: {str(e)}")
-        return JsonResponse({
-            'success': False,
-            'error': str(e)
-        }, status=500)
 
 # =========================
 # PRINTING API ENDPOINTS
@@ -1116,7 +863,7 @@ def api_printing_get_new_order(request):
 
         # Ищем заказ со статусом 'composed' без активных назначений на печать
         composed_orders = Order.objects.filter(
-            status='composed'
+            status='confirmed'
         ).exclude(
             assignments__status='in_progress',
             assignments__interface='print'
@@ -1393,10 +1140,10 @@ def api_printing_get_zone_image(request):
 def api_scoreboard_data(request):
     """Возвращает данные для табло: заказы в работе и готовые к выдаче"""
     try:
-        # ЗАКАЗЫ В РАБОТЕ (printing) - через OrderAssignment
+        # ЗАКАЗЫ В РАБОТЕ - через OrderAssignment
         in_progress_assignments = OrderAssignment.objects.filter(
-            status='in_progress',
-            interface='print'  # Только печатники
+            Q(status='in_progress', interface='print') |
+            Q(status='completed', interface='reception')
         ).select_related('order', 'order__product', 'worker').order_by('started_at')[:10]
 
         in_progress_data = []

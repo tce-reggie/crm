@@ -55,7 +55,6 @@ class User(models.Model):
         interface_urls = {
             'terminal': 'terminal_interface',
             'reception': 'reception_interface',
-            'composing': 'composing_interface',
             'printing': 'printing_interface',
             'admin': 'admin_interface',
             'scoreboard': 'scoreboard',
@@ -163,7 +162,6 @@ class Order(models.Model):
         ('new', 'Новый'),
         ('confirmed', 'Подтвержден'),
         ('in_progress', 'В работе'),
-        ('composed','Собран'),
         ('printing', 'Печатается'),
         ('printed', 'Напечатан'),
         ('ready', 'Готов к выдаче'),
