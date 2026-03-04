@@ -25,6 +25,12 @@ sudo docker-compose logs web --tail=50
 # Если выведет, что проблемы с enterpoint.sh, то:
 dos2unix /vagrant/docker/entrypoint.sh
 
+# Команда для cmd чтобы узнать айпи
+ipconfig
+
+# Ссылка для дступа
+http://<ip>:8080
+
 для отключения и очистки содержимого вм :
 exit
 cd ~/PycharmProjects/tce-reggie/crm/shop
