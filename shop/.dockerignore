@@ -14,16 +14,24 @@
 
 # Python
 __pycache__/
-*.pyc
-*.pyo
-*.pyd
-.python-version
-venv/
-env/
-.venv/
-ENV/
-env.bak/
-venv.bak/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+*.egg-info/
+.installed.cfg
+*.egg
 
 # Django
 *.log
@@ -59,3 +67,11 @@ tests/
 docs/
 *.md
 *.rst
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Docs
+*.md
+docs/

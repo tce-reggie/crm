@@ -18,6 +18,13 @@ sudo docker-compose up -d --build
 # Проверка контейнеров
 sudo docker-compose ps
 
+# Если на предыдущих этапах возникают ошибки,
+# то попобовать эту командку:
+sudo docker-compose logs web --tail=50
+
+# Если выведет, что проблемы с enterpoint.sh, то:
+dos2unix /vagrant/docker/entrypoint.sh
+
 для отключения и очистки содержимого вм :
 exit
 cd ~/PycharmProjects/tce-reggie/crm/shop

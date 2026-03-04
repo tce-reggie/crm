@@ -3,10 +3,6 @@
 venv/
 ENV/
 
-# База данных
-#*.sqlite3
-#db.sqlite3
-
 # Python
 __pycache__/
 *.pyc
