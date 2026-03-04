@@ -662,6 +662,7 @@ function switchArea(areaId, config) {
 }
 
 // Создание элемента принта (исправить настройку размеров принта!!!!)
+// Обновленная функция createPrintElement
 function createPrintElement(print) {
     console.log('createPrintElement для принта:', print);
 
@@ -673,7 +674,6 @@ function createPrintElement(print) {
     el.style.width = print.width + 'px';
     el.style.height = print.height + 'px';
     el.style.cursor = 'move';
-    //el.style.overflow = 'hidden';
     el.style.overflow = 'visible';
     el.dataset.printId = print.id;
 
@@ -690,16 +690,14 @@ function createPrintElement(print) {
     if (print.isCustomText) {
         // Текстовый принт: БЕЛЫЙ ТЕКСТ НА ПРОЗРАЧНОМ ФОНЕ
         el.textContent = print.name;
-
-        // Стили для текста (белый на прозрачном)
         el.style.display = 'flex';
         el.style.alignItems = 'center';
         el.style.justifyContent = 'center';
         el.style.fontFamily = 'Arial, sans-serif';
-        el.style.fontSize = '16px';  // Чуть больше для лучшей читаемости
+        el.style.fontSize = '16px';
         el.style.fontWeight = 'bold';
-        el.style.color = '#FFFFFF';  // БЕЛЫЙ цвет текста
-        el.style.background = 'transparent';  // ПРОЗРАЧНЫЙ фон
+        el.style.color = '#FFFFFF';
+        el.style.background = 'transparent';
         el.style.padding = '5px';
         el.style.boxSizing = 'border-box';
         el.style.textAlign = 'center';
@@ -712,8 +710,14 @@ function createPrintElement(print) {
         img.src = print.imageUrl;
         img.style.width = '100%';
         img.style.height = '100%';
-        img.style.objectFit = 'contain';
+        img.style.objectFit = 'contain'; // contain, чтобы изображение не искажалось
         img.style.pointerEvents = 'none';
+
+        // Добавляем обработчик для проверки загрузки
+        img.onload = function() {
+            console.log('Изображение в элементе загружено, размеры:', img.width, 'x', img.height);
+        };
+
         el.appendChild(img);
     } else {
         // Принт без изображения (запасной вариант)
@@ -726,7 +730,7 @@ function createPrintElement(print) {
         el.style.color = 'white';
     }
 
-    // БЕЙДЖИ СОХРАНЕННОСТИ (для ВСЕХ типов принтов)
+    // БЕЙДЖИ СОХРАНЕННОСТИ
     if (print.isSaved) {
         const badge = document.createElement('div');
         badge.className = 'saved-badge';
@@ -734,8 +738,8 @@ function createPrintElement(print) {
         badge.style.cssText = `
             position: absolute;
             top: 5px;
-            right: 0px;
-            background: rgba(255, 152, 0, 0.8);
+            right: 5px;
+            background: #4CAF50;
             color: white;
             width: 20px;
             height: 20px;
@@ -1093,17 +1097,27 @@ function hasIntersectionWithAny(printObj, otherPrints, ignorePrint = null) {
 
 // Обновленная функция selectPrint
 // пока тестовый вариант с фиксированным размером всех принтов, нужно исправить чтобы принт был таких же размеров как и его размеров т.е. m * n пикселей!!!!!
-function selectPrint(id, name, imageUrl) {
+// Простая функция selectPrint
+async function selectPrint(id, name, imageUrl) {
     if (!currentAreaId || !currentAreaConfig) {
         alert('Сначала выберите зону печати');
         return;
     }
 
-    const printsForArea = orderPrints[currentAreaId] || []; // Было areaPrints
+    const printsForArea = orderPrints[currentAreaId] || [];
     if (printsForArea.length >= currentAreaConfig.maxPrints) {
         alert(`Максимум ${currentAreaConfig.maxPrints} принтов для этой зоны`);
         return;
     }
+
+    // Загружаем изображение и получаем его размеры
+    const img = new Image();
+    img.src = imageUrl;
+
+    // Ждем загрузки изображения
+    await new Promise((resolve) => {
+        img.onload = resolve;
+    });
 
     const printInstanceId = Date.now();
 
@@ -1114,14 +1128,16 @@ function selectPrint(id, name, imageUrl) {
         imageUrl: imageUrl || null,
         x: 50,
         y: 50,
-        width: 10,
-        height: 10,
+        width: img.width,      // Реальная ширина изображения
+        height: img.height,    // Реальная высота изображения
         areaId: currentAreaId,
         isSaved: false,
         isCustomText: false
     };
 
-    // Добавляем в orderPrints (было areaPrints)
+    console.log('Создан принт с размерами:', img.width, 'x', img.height);
+
+    // Добавляем в orderPrints
     if (!orderPrints[currentAreaId]) {
         orderPrints[currentAreaId] = [];
     }
@@ -1131,6 +1147,7 @@ function selectPrint(id, name, imageUrl) {
     renderAreaPrints();
     updateCurrentPrintsList();
 }
+
 
 // Обновленная функция renderAreaPrints
 function renderAreaPrints() {
