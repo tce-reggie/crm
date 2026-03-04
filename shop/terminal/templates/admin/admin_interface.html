@@ -525,38 +525,63 @@
                 </div>
             </div>
 
-            <!-- Вкладка ИЗДЕЛИЯ -->
+            <!-- Вкладка ИЗДЕЛИЯ с подвкладками -->
             <div id="products" class="tab-pane">
                 <h2 class="section-title">Управление изделиями</h2>
 
-                <div class="search-panel">
-                    <input type="text" id="productSearch" class="search-input" placeholder="🔍 Поиск по модели, цвету...">
-                    <button class="action-btn btn-success" onclick="showAddProductModal()">➕ Добавить изделие</button>
-                    <button class="action-btn btn-delete" onclick="deleteAllProducts()">🗑️ Удалить все</button>
+                <!-- Подвкладки для изделий -->
+                <div class="tabs" style="margin-bottom: 20px; background: #0f3460;">
+                    <button class="tab product-tab active" onclick="showProductTab('productItems')">👕 Товары</button>
+                    <button class="tab product-tab" onclick="showProductTab('productAreas')">🖼️ Области печати</button>
                 </div>
 
-                <div style="overflow-x: auto;">
-                    <table class="data-table" id="productsTable">
-                        <thead>
-                            <tr>
-                                <th>ID</th>
-                                <th>Модель</th>
-                                <th>Цвет</th>
-                                <th>Размер</th>
-                                <th>Количество</th>
-                                <th>Заказов</th>
-                                <th>Зон печати</th>
-                                <th>Действия</th>
-                            </tr>
-                        </thead>
-                        <tbody id="productsList">
-                            <tr>
-                                <td colspan="8" style="text-align: center; padding: 40px;">
-                                    Загрузка изделий...
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
+                <!-- ========== ПОДВКЛАДКА 1: ТОВАРЫ ========== -->
+                <div id="productItems" class="product-pane" style="display: block;">
+                    <div class="search-panel">
+                        <input type="text" id="productSearch" class="search-input" placeholder="🔍 Поиск по модели, цвету...">
+                        <button class="action-btn btn-success" onclick="showAddProductModal()">➕ Добавить товар</button>
+                        <button class="action-btn btn-delete" onclick="deleteAllProducts()">🗑️ Удалить все</button>
+                    </div>
+
+                    <div style="overflow-x: auto;">
+                        <table class="data-table" id="productsTable">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Модель</th>
+                                    <th>Изображение</th>
+                                    <th>Цвет</th>
+                                    <th>Размер</th>
+                                    <th>Количество</th>
+                                    <th>Заказов</th>
+                                    <th>Зон печати</th>
+                                    <th>Действия</th>
+                                </tr>
+                            </thead>
+                            <tbody id="productsList">
+                                <tr>
+                                    <td colspan="9" style="text-align: center; padding: 40px;">
+                                        Загрузка товаров...
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- ========== ПОДВКЛАДКА 2: ОБЛАСТИ ПЕЧАТИ ========== -->
+                <div id="productAreas" class="product-pane" style="display: none;">
+                    <div class="search-panel" style="margin-bottom: 20px;">
+                        <select id="productSelectForAreas" class="filter-select" style="min-width: 300px;" onchange="loadProductAreas()">
+                            <option value="">Выберите товар</option>
+                        </select>
+                        <button class="action-btn btn-success" onclick="showAddAreaModal()" id="addAreaBtn" disabled>➕ Добавить область печати</button>
+                    </div>
+
+                    <!-- Список областей печати для выбранного товара -->
+                    <div id="areasListContainer" style="margin-top: 20px;">
+                        <!-- Здесь будет отображаться список областей -->
+                    </div>
                 </div>
             </div>
             <!-- Вкладка ПРИНТЫ -->
@@ -1045,6 +1070,96 @@
             </form>
         </div>
     </div>
+
+    <!-- Модальное окно для добавления/редактирования области печати -->
+    <div id="areaModal" class="modal">
+        <div class="modal-content" style="max-width: 800px;">
+            <div class="modal-header">
+                <h2 id="areaModalTitle">Добавление области печати</h2>
+                <button class="modal-close" onclick="closeModal('areaModal')">&times;</button>
+            </div>
+            <form id="areaForm" onsubmit="saveArea(event)">
+                <input type="hidden" id="areaId" value="">
+                <input type="hidden" id="areaProductId" value="">
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                    <!-- Левая колонка - параметры -->
+                    <div>
+                        <div class="form-group">
+                            <label>Название области</label>
+                            <input type="text" id="areaName" class="form-control" required
+                                   placeholder="Например: Передняя сторона">
+                        </div>
+
+                        <div class="form-group">
+                            <label>Изображение области</label>
+                            <input type="file" id="areaImage" class="form-control" accept="image/*"
+                                   onchange="previewAreaImage(this)">
+                            <small style="color: #aaa;">Поддерживаются форматы: JPG, PNG, GIF</small>
+                        </div>
+
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                            <div class="form-group">
+                                <label>Ширина (px)</label>
+                                <input type="number" id="areaWidth" class="form-control" min="1" value="200" required>
+                            </div>
+                            <div class="form-group">
+                                <label>Высота (px)</label>
+                                <input type="number" id="areaHeight" class="form-control" min="1" value="200" required>
+                            </div>
+                        </div>
+
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                            <div class="form-group">
+                                <label>Отступ X (px)</label>
+                                <input type="number" id="areaOffsetX" class="form-control" value="0" required>
+                            </div>
+                            <div class="form-group">
+                                <label>Отступ Y (px)</label>
+                                <input type="number" id="areaOffsetY" class="form-control" value="0" required>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Максимум принтов</label>
+                            <input type="number" id="areaMaxPrints" class="form-control" min="1" value="1" required>
+                        </div>
+                    </div>
+
+                    <!-- Правая колонка - предпросмотр -->
+                    <div>
+                        <label>Предпросмотр области</label>
+                        <div style="background: #0f3460; border-radius: 8px; padding: 20px; text-align: center; min-height: 300px; display: flex; align-items: flex-start; justify-content: flex-start; position: relative; overflow: auto;">
+                            <div style="position: relative; display: inline-block;">
+                                <img id="areaPreview" src="" style="display: none; border: 1px solid #1a4b8c; border-radius: 4px;">
+                                <div id="areaPreviewPlaceholder" style="color: #aaa;">Изображение не выбрано</div>
+                                <div id="areaOverlay" style="position: absolute; border: 2px dashed #e94560; background: rgba(233, 69, 96, 0.1); pointer-events: none; display: none;"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div style="margin-top: 20px; display: flex; gap: 10px;">
+                    <button type="submit" class="action-btn btn-success" style="flex: 1; padding: 12px;">Сохранить область</button>
+                    <button type="button" class="action-btn btn-warning" onclick="closeModal('areaModal')" style="flex: 1; padding: 12px;">Отмена</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Модальное окно для просмотра области -->
+    <div id="viewAreaModal" class="modal">
+        <div class="modal-content" style="max-width: 600px;">
+            <div class="modal-header">
+                <h2>Детали области печати</h2>
+                <button class="modal-close" onclick="closeModal('viewAreaModal')">&times;</button>
+            </div>
+            <div id="viewAreaContent" style="text-align: center;">
+                <!-- Данные загружаются динамически -->
+            </div>
+        </div>
+    </div>
+
 
     <script src="{% static 'admin/admin.js' %}"></script>
 </body>

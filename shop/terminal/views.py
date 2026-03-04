@@ -2644,3 +2644,100 @@ def api_admin_delete_event_print(request, item_id):
 
     except Exception as e:
         return JsonResponse({'success': False, 'error': str(e)}, status=500)
+
+
+# ================== ОБЛАСТИ ПЕЧАТИ (ADMIN) ==================
+
+@csrf_exempt
+@require_POST
+def api_admin_add_print_area(request):
+    """Добавление области печати для товара"""
+    try:
+        product_id = request.POST.get('product_id')
+        area_name = request.POST.get('area_name')
+        width = request.POST.get('width')
+        height = request.POST.get('height')
+        offset_x = request.POST.get('offset_x', 0)
+        offset_y = request.POST.get('offset_y', 0)
+        max_prints = request.POST.get('max_prints', 1)
+        area_image = request.FILES.get('area_image')
+
+        if not all([product_id, area_name, width, height]):
+            return JsonResponse({'success': False, 'error': 'Заполните все обязательные поля'})
+
+        if not area_image:
+            return JsonResponse({'success': False, 'error': 'Изображение области обязательно'})
+
+        product = get_object_or_404(Product, product_id=product_id)
+
+        # Создаем область печати - изображение сохранится автоматически
+        # благодаря upload_to=area_image_directory_path в модели
+        area = ProductPrintArea.objects.create(
+            product=product,
+            area_name=area_name,
+            width=width,
+            height=height,
+            offset_x=offset_x,
+            offset_y=offset_y,
+            max_prints=max_prints,
+            area_image=area_image  # Django автоматически вызовет area_image_directory_path
+        )
+
+        return JsonResponse({
+            'success': True,
+            'message': 'Область печати добавлена',
+            'area_id': area.area_id,
+            'image_path': area.area_image.url if area.area_image else None
+        })
+
+    except Exception as e:
+        print(f"ERROR добавления области: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return JsonResponse({'success': False, 'error': str(e)}, status=500)
+
+
+@csrf_exempt
+@require_POST
+def api_admin_update_print_area(request, area_id):
+    """Обновление области печати"""
+    try:
+        area = get_object_or_404(ProductPrintArea, area_id=area_id)
+
+        area.area_name = request.POST.get('area_name', area.area_name)
+        area.width = request.POST.get('width', area.width)
+        area.height = request.POST.get('height', area.height)
+        area.offset_x = request.POST.get('offset_x', area.offset_x)
+        area.offset_y = request.POST.get('offset_y', area.offset_y)
+        area.max_prints = request.POST.get('max_prints', area.max_prints)
+
+        if request.FILES.get('area_image'):
+            # Старое изображение удалится автоматически
+            area.area_image = request.FILES['area_image']
+
+        area.save()
+
+        return JsonResponse({
+            'success': True,
+            'message': 'Область печати обновлена'
+        })
+
+    except Exception as e:
+        print(f"ERROR обновления области: {str(e)}")
+        return JsonResponse({'success': False, 'error': str(e)}, status=500)
+
+@csrf_exempt
+@require_POST
+def api_admin_delete_print_area(request, area_id):
+    """Удаление области печати"""
+    try:
+        area = get_object_or_404(ProductPrintArea, area_id=area_id)
+        area.delete()
+
+        return JsonResponse({
+            'success': True,
+            'message': 'Область печати удалена'
+        })
+
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)}, status=500)

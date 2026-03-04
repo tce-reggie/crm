@@ -176,12 +176,12 @@ async function loadProducts() {
         const tbody = document.getElementById('productsList');
 
         if (!data.success) {
-            tbody.innerHTML = `<tr><td colspan="8" style="text-align: center; padding: 40px;">Ошибка: ${data.error}</td></tr>`;
+            tbody.innerHTML = `<tr><td colspan="9" style="text-align: center; padding: 40px;">Ошибка: ${data.error}</td></tr>`;
             return;
         }
 
         if (data.products.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="8" style="text-align: center; padding: 40px;">Изделия не найдены</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="9" style="text-align: center; padding: 40px;">Товары не найдены</td></tr>';
             return;
         }
 
@@ -201,7 +201,12 @@ async function loadProducts() {
             html += `
                 <tr>
                     <td>${p.id}</td>
-                    <td>${p.model}</td>
+                    <td><strong>${p.model}</strong></td>
+                    <td>
+                        ${p.image
+                            ? `<img src="${p.image}" style="width: 50px; height: 50px; object-fit: contain; border-radius: 4px;">`
+                            : '<span style="color: #aaa;">Нет</span>'}
+                    </td>
                     <td>${p.color}</td>
                     <td>${p.size}</td>
                     <td><strong>${p.quantity}</strong></td>
@@ -218,7 +223,7 @@ async function loadProducts() {
         tbody.innerHTML = html;
 
     } catch (error) {
-        console.error('Ошибка загрузки изделий:', error);
+        console.error('Ошибка загрузки товаров:', error);
     }
 }
 
@@ -1778,7 +1783,6 @@ function escapeHtml(text) {
     return text.toString().replace(/[&<>"']/g, function(m) { return map[m]; });
 }
 
-
 // ========================
 // УПРАВЛЕНИЕ ИЗДЕЛИЯМИ С ЗОНАМИ ПЕЧАТИ
 // ========================
@@ -1801,7 +1805,6 @@ async function addProduct(event) {
     const formData = new FormData(form);
 
     try {
-        // Используем FormData для отправки файла
         const response = await fetch('/api/admin/products/add-with-image/', {
             method: 'POST',
             headers: {
@@ -1813,25 +1816,16 @@ async function addProduct(event) {
         const result = await response.json();
 
         if (result.success) {
-            // Сохраняем данные о созданном продукте
             currentProductData = result.product;
-
-            // Закрываем модальное окно добавления
             closeModal('addProductModal');
-
-            // Открываем окно для добавления зон печати
             document.getElementById('currentProductInfo').textContent =
                 `Изделие: ${currentProductData.model} (${currentProductData.color}, ${currentProductData.size})`;
-
-            // Очищаем предыдущие зоны
             productAreas = [];
             updateAreasList();
-
             openModal('addPrintAreaModal');
         } else {
             alert('Ошибка: ' + result.error);
         }
-
     } catch (error) {
         alert('Ошибка: ' + error.message);
     }
@@ -1888,27 +1882,23 @@ function showAreaDesigner() {
         return;
     }
 
-    // Создаем временный URL для предпросмотра
     const reader = new FileReader();
     reader.onload = function(e) {
         document.getElementById('areaPreviewImage').src = e.target.result;
         document.getElementById('designerAreaName').value = areaName;
 
-        // Сбрасываем параметры области
         document.getElementById('areaWidth').value = 200;
         document.getElementById('areaHeight').value = 200;
         document.getElementById('areaX').value = 0;
         document.getElementById('areaY').value = 0;
         document.getElementById('maxPrints').value = 1;
 
-        // Сохраняем данные о текущей области
         currentAreaData = {
             name: areaName,
             image: areaImage,
             previewUrl: e.target.result
         };
 
-        // Показываем оверлей
         updateAreaOverlay();
         document.getElementById('printAreaOverlay').style.display = 'block';
 
@@ -1922,69 +1912,12 @@ function updateAreaOverlay() {
     const overlay = document.getElementById('printAreaOverlay');
     const width = parseInt(document.getElementById('areaWidth').value);
     const height = parseInt(document.getElementById('areaHeight').value);
-    const x = parseInt(document.getElementById('areaX').value);
-    const y = parseInt(document.getElementById('areaY').value);
 
     overlay.style.width = width + 'px';
     overlay.style.height = height + 'px';
-    overlay.style.left = x + 'px';
-    overlay.style.top = y + 'px';
+    overlay.style.left = '0px';
+    overlay.style.top = '0px';
 }
-
-// Добавляем возможность перетаскивания рамки
-function makeOverlayDraggable() {
-    const overlay = document.getElementById('printAreaOverlay');
-    let isDragging = false;
-    let startX, startY, startLeft, startTop;
-
-    overlay.addEventListener('mousedown', startDrag);
-
-    function startDrag(e) {
-        isDragging = true;
-        startX = e.clientX;
-        startY = e.clientY;
-        startLeft = parseInt(overlay.style.left) || 0;
-        startTop = parseInt(overlay.style.top) || 0;
-
-        document.addEventListener('mousemove', drag);
-        document.addEventListener('mouseup', stopDrag);
-
-        e.preventDefault();
-    }
-
-    function drag(e) {
-        if (!isDragging) return;
-
-        const dx = e.clientX - startX;
-        const dy = e.clientY - startY;
-
-        let newLeft = Math.max(0, startLeft + dx);
-        let newTop = Math.max(0, startTop + dy);
-
-        // Ограничиваем границами изображения
-        const img = document.getElementById('areaPreviewImage');
-        newLeft = Math.min(newLeft, img.width - parseInt(overlay.style.width));
-        newTop = Math.min(newTop, img.height - parseInt(overlay.style.height));
-
-        overlay.style.left = newLeft + 'px';
-        overlay.style.top = newTop + 'px';
-
-        document.getElementById('areaX').value = newLeft;
-        document.getElementById('areaY').value = newTop;
-    }
-
-    function stopDrag() {
-        isDragging = false;
-        document.removeEventListener('mousemove', drag);
-        document.removeEventListener('mouseup', stopDrag);
-    }
-}
-
-// Обновляем оверлей при изменении размеров
-document.getElementById('areaWidth').addEventListener('input', updateAreaOverlay);
-document.getElementById('areaHeight').addEventListener('input', updateAreaOverlay);
-document.getElementById('areaX').addEventListener('input', updateAreaOverlay);
-document.getElementById('areaY').addEventListener('input', updateAreaOverlay);
 
 // Сохранение области печати
 async function savePrintArea() {
@@ -1995,7 +1928,6 @@ async function savePrintArea() {
     const y = parseInt(document.getElementById('areaY').value);
     const maxPrints = parseInt(document.getElementById('maxPrints').value);
 
-    // Создаем FormData для отправки файла
     const formData = new FormData();
     formData.append('product_id', currentProductData.id);
     formData.append('area_name', areaName);
@@ -2018,7 +1950,6 @@ async function savePrintArea() {
         const result = await response.json();
 
         if (result.success) {
-            // Добавляем область в локальный список
             productAreas.push({
                 area_name: areaName,
                 width: width,
@@ -2030,21 +1961,14 @@ async function savePrintArea() {
                 id: result.area_id
             });
 
-            // Обновляем список
             updateAreasList();
-
-            // Очищаем поля для новой стороны
             document.getElementById('newAreaName').value = '';
             document.getElementById('newAreaImage').value = '';
-
-            // Закрываем дизайнер
             closeModal('areaDesignerModal');
-
             alert('Область печати успешно добавлена!');
         } else {
             alert('Ошибка: ' + result.error);
         }
-
     } catch (error) {
         alert('Ошибка: ' + error.message);
     }
@@ -2071,7 +1995,6 @@ function editArea(index) {
 
     updateAreaOverlay();
     document.getElementById('printAreaOverlay').style.display = 'block';
-
     openModal('areaDesignerModal');
 }
 
@@ -2087,5 +2010,425 @@ function deleteArea(index) {
 function finishProductCreation() {
     closeModal('addPrintAreaModal');
     alert('Изделие успешно добавлено с ' + productAreas.length + ' сторонами печати');
-    loadProducts(); // Перезагружаем список изделий
+    loadProducts();
 }
+
+// Инициализация обработчиков
+document.addEventListener('DOMContentLoaded', function() {
+    const widthInput = document.getElementById('areaWidth');
+    const heightInput = document.getElementById('areaHeight');
+
+    if (widthInput) {
+        widthInput.addEventListener('input', updateAreaOverlay);
+    }
+    if (heightInput) {
+        heightInput.addEventListener('input', updateAreaOverlay);
+    }
+});
+
+// ========================
+// УПРАВЛЕНИЕ ПОДВКЛАДКАМИ ИЗДЕЛИЙ
+// ========================
+
+// Переключение между подвкладками изделий
+function showProductTab(tabName) {
+    console.log('showProductTab called with:', tabName);
+
+    // Скрываем все панели
+    document.querySelectorAll('.product-pane').forEach(pane => {
+        pane.style.display = 'none';
+    });
+
+    // Убираем активный класс у всех кнопок
+    document.querySelectorAll('.product-tab').forEach(tab => {
+        tab.classList.remove('active');
+    });
+
+    // Показываем выбранную панель
+    const selectedPane = document.getElementById(tabName);
+    if (selectedPane) {
+        selectedPane.style.display = 'block';
+    }
+
+    // Активируем кнопку (ищем кнопку с соответствующим onclick)
+    document.querySelectorAll('.product-tab').forEach(btn => {
+        if (btn.getAttribute('onclick') && btn.getAttribute('onclick').includes(tabName)) {
+            btn.classList.add('active');
+        }
+    });
+
+    // Загружаем данные
+    if (tabName === 'productItems') {
+        loadProducts();
+    } else if (tabName === 'productAreas') {
+        loadProductsForAreaSelect();
+    }
+}
+
+// Загрузка товаров для селекта в области печати
+async function loadProductsForAreaSelect() {
+    try {
+        const response = await fetch('/api/admin/products/');
+        const data = await response.json();
+
+        const select = document.getElementById('productSelectForAreas');
+        const addBtn = document.getElementById('addAreaBtn');
+
+        if (!select) return;
+
+        select.innerHTML = '<option value="">Выберите товар</option>';
+
+        if (data.success && data.products) {
+            // Группируем товары по моделям для удобства
+            const grouped = {};
+            data.products.forEach(product => {
+                const key = product.model;
+                if (!grouped[key]) grouped[key] = [];
+                grouped[key].push(product);
+            });
+
+            // Сортируем модели
+            Object.keys(grouped).sort().forEach(model => {
+                const optgroup = document.createElement('optgroup');
+                optgroup.label = model;
+
+                grouped[model].forEach(product => {
+                    const option = document.createElement('option');
+                    option.value = product.id;
+                    option.textContent = `${product.color} - ${product.size} (в наличии: ${product.quantity})`;
+                    if (product.image) option.dataset.image = product.image;
+                    optgroup.appendChild(option);
+                });
+
+                select.appendChild(optgroup);
+            });
+
+            if (addBtn) addBtn.disabled = true;
+        }
+
+        // Сбрасываем список областей
+        const container = document.getElementById('areasListContainer');
+        if (container) {
+            container.innerHTML = '<div style="text-align: center; padding: 40px; background: #0f3460; border-radius: 8px; color: #aaa;">Выберите товар для просмотра областей печати</div>';
+        }
+
+    } catch (error) {
+        console.error('Ошибка загрузки товаров для селекта:', error);
+    }
+}
+
+// Загрузка областей печати для выбранного товара
+async function loadProductAreas() {
+    const productId = document.getElementById('productSelectForAreas').value;
+    const addBtn = document.getElementById('addAreaBtn');
+
+    if (!productId) {
+        document.getElementById('areasListContainer').innerHTML =
+            '<div style="text-align: center; padding: 40px; background: #0f3460; border-radius: 8px; color: #aaa;">Выберите товар для просмотра областей печати</div>';
+        if (addBtn) addBtn.disabled = true;
+        return;
+    }
+
+    if (addBtn) addBtn.disabled = false;
+
+    try {
+        const productResponse = await fetch('/api/admin/products/');
+        const productData = await productResponse.json();
+        const product = productData.products.find(p => p.id == productId);
+
+        const areasResponse = await fetch(`/api/print-areas/?product_id=${productId}`);
+        const areas = await areasResponse.json();
+
+        const container = document.getElementById('areasListContainer');
+
+        if (!areas || areas.length === 0) {
+            container.innerHTML = `
+                <div style="text-align: center; padding: 40px; background: #0f3460; border-radius: 8px;">
+                    <p style="color: #aaa; margin-bottom: 20px;">Для товара "${product?.model || ''} ${product?.color || ''} ${product?.size || ''}" нет областей печати</p>
+                    <button class="action-btn btn-success" onclick="showAddAreaModalForProduct(${productId})">
+                        ➕ Добавить первую область печати
+                    </button>
+                </div>
+            `;
+            return;
+        }
+
+        let html = `
+            <h3 style="color: #e94560; margin-bottom: 15px;">
+                Области печати для: ${product?.model || ''} (${product?.color || ''}, ${product?.size || ''})
+            </h3>
+            <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px;">
+        `;
+
+        areas.forEach(area => {
+            html += `
+                <div style="background: #0f3460; border-radius: 8px; overflow: hidden; border: 1px solid #1a4b8c;">
+                    <div style="height: 150px; background: #1a1a2e; display: flex; align-items: center; justify-content: center; overflow: hidden;">
+                        ${area.image_url
+                            ? `<img src="${area.image_url}" style="max-width: 100%; max-height: 100%; object-fit: contain;">`
+                            : '<div style="color: #aaa;">Нет изображения</div>'}
+                    </div>
+                    <div style="padding: 15px;">
+                        <h4 style="color: #e94560; margin-bottom: 10px;">${escapeHtml(area.area_name)}</h4>
+                        <div style="font-size: 13px; color: #aaa; margin-bottom: 5px;">
+                            Размер: ${area.width} x ${area.height} px
+                        </div>
+                        <div style="font-size: 13px; color: #aaa; margin-bottom: 5px;">
+                            Отступ: X=${area.offset_x}, Y=${area.offset_y}
+                        </div>
+                        <div style="font-size: 13px; color: #aaa; margin-bottom: 15px;">
+                            Макс. принтов: ${area.max_prints}
+                        </div>
+                        <div style="display: flex; gap: 5px;">
+                            <button class="action-btn btn-edit" onclick="editArea(${area.id})" style="flex: 1;">✏️ Редактировать</button>
+                            <button class="action-btn btn-delete" onclick="deleteArea(${area.id})" style="flex: 1;">🗑️ Удалить</button>
+                        </div>
+                    </div>
+                </div>
+            `;
+        });
+
+        html += '</div>';
+        container.innerHTML = html;
+
+    } catch (error) {
+        console.error('Ошибка загрузки областей печати:', error);
+        document.getElementById('areasListContainer').innerHTML =
+            `<div style="text-align: center; padding: 40px; background: #0f3460; border-radius: 8px; color: #e94560;">Ошибка загрузки: ${error.message}</div>`;
+    }
+}
+
+// Показать модальное окно для добавления области
+function showAddAreaModal() {
+    const productId = document.getElementById('productSelectForAreas').value;
+    if (!productId) {
+        alert('Сначала выберите товар');
+        return;
+    }
+    showAddAreaModalForProduct(productId);
+}
+
+// Показать модальное окно для добавления области конкретному товару
+function showAddAreaModalForProduct(productId) {
+    document.getElementById('areaModalTitle').textContent = 'Добавление области печати';
+    document.getElementById('areaId').value = '';
+    document.getElementById('areaProductId').value = productId;
+    document.getElementById('areaName').value = '';
+    document.getElementById('areaImage').value = '';
+    document.getElementById('areaWidth').value = '200';
+    document.getElementById('areaHeight').value = '200';
+    document.getElementById('areaOffsetX').value = '0';
+    document.getElementById('areaOffsetY').value = '0';
+    document.getElementById('areaMaxPrints').value = '1';
+
+    // Сбрасываем preview
+    const preview = document.getElementById('areaPreview');
+    const placeholder = document.getElementById('areaPreviewPlaceholder');
+    const overlay = document.getElementById('areaOverlay');
+
+    preview.style.display = 'none';
+    preview.src = '';
+    preview.style.width = 'auto';
+    preview.style.height = 'auto';
+    preview.style.maxWidth = 'none';
+    preview.style.maxHeight = 'none';
+    placeholder.style.display = 'block';
+    overlay.style.display = 'none';
+
+    openModal('areaModal');
+}
+
+// Предпросмотр изображения области
+function previewAreaImage(input) {
+    const preview = document.getElementById('areaPreview');
+    const placeholder = document.getElementById('areaPreviewPlaceholder');
+    const overlay = document.getElementById('areaOverlay');
+
+    if (input.files && input.files[0]) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            preview.src = e.target.result;
+            preview.style.display = 'block';
+            preview.style.width = 'auto';
+            preview.style.height = 'auto';
+            preview.style.maxWidth = 'none';
+            preview.style.maxHeight = 'none';
+            placeholder.style.display = 'none';
+
+            // Обновляем оверлей после загрузки
+            preview.onload = function() {
+                updateAreaOverlay();
+            };
+        };
+        reader.readAsDataURL(input.files[0]);
+    }
+}
+
+// Обновление позиции overlay
+function updateAreaOverlay() {
+    const overlay = document.getElementById('areaOverlay');
+    const preview = document.getElementById('areaPreview');
+
+    if (preview && preview.style.display === 'block') {
+        const width = parseInt(document.getElementById('areaWidth').value);
+        const height = parseInt(document.getElementById('areaHeight').value);
+        const offsetX = parseInt(document.getElementById('areaOffsetX').value);
+        const offsetY = parseInt(document.getElementById('areaOffsetY').value);
+
+        overlay.style.width = width + 'px';
+        overlay.style.height = height + 'px';
+        overlay.style.left = offsetX + 'px';
+        overlay.style.top = offsetY + 'px';
+        overlay.style.display = 'block';
+    }
+}
+
+// Сохранение области печати
+async function saveArea(event) {
+    event.preventDefault();
+
+    const areaId = document.getElementById('areaId').value;
+    const productId = document.getElementById('areaProductId').value;
+    const areaName = document.getElementById('areaName').value.trim();
+    const width = parseInt(document.getElementById('areaWidth').value);
+    const height = parseInt(document.getElementById('areaHeight').value);
+    const offsetX = parseInt(document.getElementById('areaOffsetX').value);
+    const offsetY = parseInt(document.getElementById('areaOffsetY').value);
+    const maxPrints = parseInt(document.getElementById('areaMaxPrints').value);
+    const imageFile = document.getElementById('areaImage').files[0];
+
+    if (!areaName) {
+        alert('Введите название области');
+        return;
+    }
+
+    const formData = new FormData();
+    formData.append('product_id', productId);
+    formData.append('area_name', areaName);
+    formData.append('width', width);
+    formData.append('height', height);
+    formData.append('offset_x', offsetX);
+    formData.append('offset_y', offsetY);
+    formData.append('max_prints', maxPrints);
+
+    if (imageFile) {
+        formData.append('area_image', imageFile);
+    }
+
+    const url = areaId ? `/api/admin/print-areas/${areaId}/update/` : '/api/admin/print-areas/add/';
+
+    try {
+        const response = await fetch(url, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': getCSRFToken()
+            },
+            body: formData
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+            alert(areaId ? 'Область обновлена' : 'Область добавлена');
+            closeModal('areaModal');
+            loadProductAreas();
+        } else {
+            alert('Ошибка: ' + result.error);
+        }
+
+    } catch (error) {
+        console.error('Ошибка сохранения области:', error);
+        alert('Ошибка: ' + error.message);
+    }
+}
+
+// Редактирование области
+async function editArea(areaId) {
+    try {
+        const productId = document.getElementById('productSelectForAreas').value;
+        const response = await fetch(`/api/print-areas/?product_id=${productId}`);
+        const areas = await response.json();
+        const area = areas.find(a => a.id == areaId);
+
+        if (!area) {
+            alert('Область не найдена');
+            return;
+        }
+
+        document.getElementById('areaModalTitle').textContent = 'Редактирование области печати';
+        document.getElementById('areaId').value = areaId;
+        document.getElementById('areaProductId').value = productId;
+        document.getElementById('areaName').value = area.area_name;
+        document.getElementById('areaWidth').value = area.width;
+        document.getElementById('areaHeight').value = area.height;
+        document.getElementById('areaOffsetX').value = area.offset_x || 0;
+        document.getElementById('areaOffsetY').value = area.offset_y || 0;
+        document.getElementById('areaMaxPrints').value = area.max_prints;
+
+        if (area.image_url) {
+            const preview = document.getElementById('areaPreview');
+            preview.src = area.image_url;
+            preview.style.display = 'block';
+            document.getElementById('areaPreviewPlaceholder').style.display = 'none';
+            updateAreaOverlay();
+        }
+
+        openModal('areaModal');
+
+    } catch (error) {
+        console.error('Ошибка загрузки области:', error);
+        alert('Ошибка: ' + error.message);
+    }
+}
+
+// Удаление области
+async function deleteArea(areaId) {
+    if (!confirm('Удалить область печати?')) return;
+
+    try {
+        const response = await fetch(`/api/admin/print-areas/${areaId}/delete/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': getCSRFToken()
+            }
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+            alert(data.message);
+            loadProductAreas();
+        } else {
+            alert('Ошибка: ' + data.error);
+        }
+
+    } catch (error) {
+        console.error('Ошибка удаления области:', error);
+        alert('Ошибка: ' + error.message);
+    }
+}
+
+// Функция экранирования HTML
+function escapeHtml(text) {
+    if (!text) return '';
+    const map = {
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#039;'
+    };
+    return text.toString().replace(/[&<>"']/g, function(m) { return map[m]; });
+}
+
+// Инициализация обработчиков
+document.addEventListener('DOMContentLoaded', function() {
+    // Добавляем обработчики для полей ввода
+    const areaInputs = ['areaWidth', 'areaHeight', 'areaOffsetX', 'areaOffsetY'];
+    areaInputs.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) {
+            el.addEventListener('input', updateAreaOverlay);
+        }
+    });
+});
