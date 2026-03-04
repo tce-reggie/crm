@@ -161,7 +161,7 @@ async function displayCurrentOrder(order) {
                         <strong>Содержимое:</strong><br>
                         ${printType === 'Текст'
                             ? escapeHtml(print.content)
-                            : `<img src="/media/prints/${print.content.split('/').pop()}" style="max-width: 100px; max-height: 50px; border: 1px solid #ddd;">`
+                            : `<img src="/media/prints/${print.content.split('/').pop()}" style="width: auto; height: auto; max-width: none; max-height: none; display: block;">`
                         }
                     </div>
                     <div style="color: #7f8c8d; font-size: 12px;">

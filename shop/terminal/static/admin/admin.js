@@ -1777,3 +1777,315 @@ function escapeHtml(text) {
     };
     return text.toString().replace(/[&<>"']/g, function(m) { return map[m]; });
 }
+
+
+// ========================
+// УПРАВЛЕНИЕ ИЗДЕЛИЯМИ С ЗОНАМИ ПЕЧАТИ
+// ========================
+
+// Глобальные переменные для хранения данных о текущем изделии
+let currentProductData = null;
+let currentAreaData = null;
+let productAreas = [];
+
+// Переопределяем функцию showAddProductModal
+function showAddProductModal() {
+    openModal('addProductModal');
+}
+
+// Переопределяем функцию addProduct для сохранения данных и перехода к зонам
+async function addProduct(event) {
+    event.preventDefault();
+
+    const form = event.target;
+    const formData = new FormData(form);
+
+    try {
+        // Используем FormData для отправки файла
+        const response = await fetch('/api/admin/products/add-with-image/', {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': getCSRFToken()
+            },
+            body: formData
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+            // Сохраняем данные о созданном продукте
+            currentProductData = result.product;
+
+            // Закрываем модальное окно добавления
+            closeModal('addProductModal');
+
+            // Открываем окно для добавления зон печати
+            document.getElementById('currentProductInfo').textContent =
+                `Изделие: ${currentProductData.model} (${currentProductData.color}, ${currentProductData.size})`;
+
+            // Очищаем предыдущие зоны
+            productAreas = [];
+            updateAreasList();
+
+            openModal('addPrintAreaModal');
+        } else {
+            alert('Ошибка: ' + result.error);
+        }
+
+    } catch (error) {
+        alert('Ошибка: ' + error.message);
+    }
+}
+
+// Обновление списка добавленных зон
+function updateAreasList() {
+    const areasList = document.getElementById('areasList');
+
+    if (productAreas.length === 0) {
+        areasList.innerHTML = '<div style="text-align: center; padding: 20px; background: #0f3460; border-radius: 8px; color: #aaa;">Пока нет добавленных сторон печати</div>';
+        return;
+    }
+
+    let html = '<h4 style="color: #e94560; margin-bottom: 15px;">Добавленные стороны:</h4>';
+
+    productAreas.forEach((area, index) => {
+        html += `
+            <div style="background: #0f3460; padding: 15px; border-radius: 8px; margin-bottom: 10px; display: flex; align-items: center; gap: 15px;">
+                <div style="width: 60px; height: 60px; background: #1a1a2e; border-radius: 5px; overflow: hidden;">
+                    <img src="${area.previewUrl}" style="width: 100%; height: 100%; object-fit: cover;">
+                </div>
+                <div style="flex: 1;">
+                    <strong style="color: #fff;">${area.area_name}</strong>
+                    <div style="color: #aaa; font-size: 12px;">
+                        Размер: ${area.width}x${area.height}px |
+                        Позиция: X=${area.offset_x}, Y=${area.offset_y} |
+                        Макс. принтов: ${area.max_prints}
+                    </div>
+                </div>
+                <div>
+                    <button class="action-btn btn-edit" onclick="editArea(${index})">✏️</button>
+                    <button class="action-btn btn-delete" onclick="deleteArea(${index})">🗑️</button>
+                </div>
+            </div>
+        `;
+    });
+
+    areasList.innerHTML = html;
+}
+
+// Показать дизайнер области
+function showAreaDesigner() {
+    const areaName = document.getElementById('newAreaName').value.trim();
+    const areaImage = document.getElementById('newAreaImage').files[0];
+
+    if (!areaName) {
+        alert('Введите название стороны');
+        return;
+    }
+
+    if (!areaImage) {
+        alert('Выберите изображение стороны');
+        return;
+    }
+
+    // Создаем временный URL для предпросмотра
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        document.getElementById('areaPreviewImage').src = e.target.result;
+        document.getElementById('designerAreaName').value = areaName;
+
+        // Сбрасываем параметры области
+        document.getElementById('areaWidth').value = 200;
+        document.getElementById('areaHeight').value = 200;
+        document.getElementById('areaX').value = 0;
+        document.getElementById('areaY').value = 0;
+        document.getElementById('maxPrints').value = 1;
+
+        // Сохраняем данные о текущей области
+        currentAreaData = {
+            name: areaName,
+            image: areaImage,
+            previewUrl: e.target.result
+        };
+
+        // Показываем оверлей
+        updateAreaOverlay();
+        document.getElementById('printAreaOverlay').style.display = 'block';
+
+        openModal('areaDesignerModal');
+    };
+    reader.readAsDataURL(areaImage);
+}
+
+// Обновление позиции оверлея
+function updateAreaOverlay() {
+    const overlay = document.getElementById('printAreaOverlay');
+    const width = parseInt(document.getElementById('areaWidth').value);
+    const height = parseInt(document.getElementById('areaHeight').value);
+    const x = parseInt(document.getElementById('areaX').value);
+    const y = parseInt(document.getElementById('areaY').value);
+
+    overlay.style.width = width + 'px';
+    overlay.style.height = height + 'px';
+    overlay.style.left = x + 'px';
+    overlay.style.top = y + 'px';
+}
+
+// Добавляем возможность перетаскивания рамки
+function makeOverlayDraggable() {
+    const overlay = document.getElementById('printAreaOverlay');
+    let isDragging = false;
+    let startX, startY, startLeft, startTop;
+
+    overlay.addEventListener('mousedown', startDrag);
+
+    function startDrag(e) {
+        isDragging = true;
+        startX = e.clientX;
+        startY = e.clientY;
+        startLeft = parseInt(overlay.style.left) || 0;
+        startTop = parseInt(overlay.style.top) || 0;
+
+        document.addEventListener('mousemove', drag);
+        document.addEventListener('mouseup', stopDrag);
+
+        e.preventDefault();
+    }
+
+    function drag(e) {
+        if (!isDragging) return;
+
+        const dx = e.clientX - startX;
+        const dy = e.clientY - startY;
+
+        let newLeft = Math.max(0, startLeft + dx);
+        let newTop = Math.max(0, startTop + dy);
+
+        // Ограничиваем границами изображения
+        const img = document.getElementById('areaPreviewImage');
+        newLeft = Math.min(newLeft, img.width - parseInt(overlay.style.width));
+        newTop = Math.min(newTop, img.height - parseInt(overlay.style.height));
+
+        overlay.style.left = newLeft + 'px';
+        overlay.style.top = newTop + 'px';
+
+        document.getElementById('areaX').value = newLeft;
+        document.getElementById('areaY').value = newTop;
+    }
+
+    function stopDrag() {
+        isDragging = false;
+        document.removeEventListener('mousemove', drag);
+        document.removeEventListener('mouseup', stopDrag);
+    }
+}
+
+// Обновляем оверлей при изменении размеров
+document.getElementById('areaWidth').addEventListener('input', updateAreaOverlay);
+document.getElementById('areaHeight').addEventListener('input', updateAreaOverlay);
+document.getElementById('areaX').addEventListener('input', updateAreaOverlay);
+document.getElementById('areaY').addEventListener('input', updateAreaOverlay);
+
+// Сохранение области печати
+async function savePrintArea() {
+    const areaName = document.getElementById('designerAreaName').value;
+    const width = parseInt(document.getElementById('areaWidth').value);
+    const height = parseInt(document.getElementById('areaHeight').value);
+    const x = parseInt(document.getElementById('areaX').value);
+    const y = parseInt(document.getElementById('areaY').value);
+    const maxPrints = parseInt(document.getElementById('maxPrints').value);
+
+    // Создаем FormData для отправки файла
+    const formData = new FormData();
+    formData.append('product_id', currentProductData.id);
+    formData.append('area_name', areaName);
+    formData.append('area_image', currentAreaData.image);
+    formData.append('width', width);
+    formData.append('height', height);
+    formData.append('offset_x', x);
+    formData.append('offset_y', y);
+    formData.append('max_prints', maxPrints);
+
+    try {
+        const response = await fetch('/api/admin/products/add-print-area/', {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': getCSRFToken()
+            },
+            body: formData
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+            // Добавляем область в локальный список
+            productAreas.push({
+                area_name: areaName,
+                width: width,
+                height: height,
+                offset_x: x,
+                offset_y: y,
+                max_prints: maxPrints,
+                previewUrl: currentAreaData.previewUrl,
+                id: result.area_id
+            });
+
+            // Обновляем список
+            updateAreasList();
+
+            // Очищаем поля для новой стороны
+            document.getElementById('newAreaName').value = '';
+            document.getElementById('newAreaImage').value = '';
+
+            // Закрываем дизайнер
+            closeModal('areaDesignerModal');
+
+            alert('Область печати успешно добавлена!');
+        } else {
+            alert('Ошибка: ' + result.error);
+        }
+
+    } catch (error) {
+        alert('Ошибка: ' + error.message);
+    }
+}
+
+// Редактирование области
+function editArea(index) {
+    const area = productAreas[index];
+
+    document.getElementById('areaPreviewImage').src = area.previewUrl;
+    document.getElementById('designerAreaName').value = area.area_name;
+    document.getElementById('areaWidth').value = area.width;
+    document.getElementById('areaHeight').value = area.height;
+    document.getElementById('areaX').value = area.offset_x;
+    document.getElementById('areaY').value = area.offset_y;
+    document.getElementById('maxPrints').value = area.max_prints;
+
+    currentAreaData = {
+        name: area.area_name,
+        previewUrl: area.previewUrl,
+        index: index,
+        isEdit: true
+    };
+
+    updateAreaOverlay();
+    document.getElementById('printAreaOverlay').style.display = 'block';
+
+    openModal('areaDesignerModal');
+}
+
+// Удаление области
+function deleteArea(index) {
+    if (confirm('Удалить эту сторону печати?')) {
+        productAreas.splice(index, 1);
+        updateAreasList();
+    }
+}
+
+// Завершение создания изделия
+function finishProductCreation() {
+    closeModal('addPrintAreaModal');
+    alert('Изделие успешно добавлено с ' + productAreas.length + ' сторонами печати');
+    loadProducts(); // Перезагружаем список изделий
+}
