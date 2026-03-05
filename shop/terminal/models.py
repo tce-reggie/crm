@@ -82,6 +82,10 @@ class PromoCode(models.Model):
 # функция для добавления изображения в media
 def product_image_directory_path(instance, filename):
     extension = filename.split('.')[-1]
+    # Очищаем названия от пробелов и спецсимволов
+    model = instance.model.replace(" ", "_").replace("/", "_").replace("\\", "_")
+    color = instance.color.replace(" ", "_").replace("/", "_").replace("\\", "_")
+    size = instance.size.replace(" ", "_").replace("/", "_").replace("\\", "_")
     new_filename = f"{instance.model}_{instance.color}_{instance.size}.{extension}"
     #путь относительно MEDIA_ROOT: products/Футболка_Белый_XL.jpg
     return os.path.join('products', new_filename)
@@ -90,6 +94,7 @@ class Product(models.Model):
     product_id = models.AutoField(primary_key=True, verbose_name='ID Продукта')
     model = models.CharField(max_length=100, verbose_name='Модель')
     image_filename = models.ImageField(
+        upload_to=product_image_directory_path,
         max_length=255,
         blank=True,  # Разрешить пустое значение в формах
         null=True,  # Разрешить NULL в базе данных

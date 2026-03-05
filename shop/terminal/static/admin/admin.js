@@ -607,39 +607,6 @@ function showAddProductModal() {
     openModal('addProductModal');
 }
 
-async function addProduct(event) {
-    event.preventDefault();
-
-    const form = event.target;
-    const formData = new FormData(form);
-    const data = Object.fromEntries(formData.entries());
-
-    try {
-        const response = await fetch('/api/admin/products/add/', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRFToken': getCSRFToken()
-            },
-            body: JSON.stringify(data)
-        });
-
-        const result = await response.json();
-
-        if (result.success) {
-            alert(result.message);
-            closeModal('addProductModal');
-            form.reset();
-            loadProducts();
-        } else {
-            alert('Ошибка: ' + result.error);
-        }
-
-    } catch (error) {
-        alert('Ошибка: ' + error.message);
-    }
-}
-
 async function deleteProduct(productId) {
     if (!confirm('Удалить изделие? Это действие нельзя отменить.')) return;
 
@@ -1818,11 +1785,24 @@ async function addProduct(event) {
         if (result.success) {
             currentProductData = result.product;
             closeModal('addProductModal');
-            document.getElementById('currentProductInfo').textContent =
-                `Изделие: ${currentProductData.model} (${currentProductData.color}, ${currentProductData.size})`;
+
             productAreas = [];
-            updateAreasList();
-            openModal('addPrintAreaModal');
+
+            // Проверяем, существует ли элемент areasList перед обновлением
+            const areasList = document.getElementById('areasList');
+            if (areasList) {
+                updateAreasList();
+            }
+
+            // Проверяем, существует ли модальное окно перед открытием
+            const modal = document.getElementById('addPrintAreaModal');
+            if (modal) {
+                openModal('addPrintAreaModal');
+            } else {
+                // Если модального окна нет, просто показываем сообщение
+                alert('Товар успешно добавлен! Теперь вы можете добавить области печати через вкладку "Области печати".');
+                loadProducts();
+            }
         } else {
             alert('Ошибка: ' + result.error);
         }

@@ -2741,3 +2741,70 @@ def api_admin_delete_print_area(request, area_id):
 
     except Exception as e:
         return JsonResponse({'success': False, 'error': str(e)}, status=500)
+
+@csrf_exempt
+@require_POST
+def api_admin_add_product_with_image(request):
+    """Добавление нового изделия с изображением"""
+    try:
+        model = request.POST.get('model')
+        color = request.POST.get('color')
+        size = request.POST.get('size')
+        quantity = request.POST.get('quantity')
+        image = request.FILES.get('image_filename')
+
+        if not all([model, color, size, quantity, image]):
+            return JsonResponse({'success': False, 'error': 'Заполните все поля'})
+
+        # Проверяем уникальность
+        existing = Product.objects.filter(
+            model=model,
+            color=color,
+            size=size
+        ).first()
+
+        if existing:
+            # Обновляем количество
+            existing.quantity += int(quantity)
+            if image:
+                existing.image_filename = image  # Django автоматически вызовет product_image_directory_path
+            existing.save()
+            message = f'Количество обновлено. Теперь: {existing.quantity}'
+            product_data = {
+                'id': existing.product_id,
+                'model': existing.model,
+                'color': existing.color,
+                'size': existing.size,
+                'quantity': existing.quantity,
+                'image': existing.image_filename.url if existing.image_filename else None
+            }
+        else:
+            # Создаем новый - Django автоматически вызовет product_image_directory_path
+            product = Product.objects.create(
+                model=model,
+                color=color,
+                size=size,
+                quantity=int(quantity),
+                image_filename=image  # Здесь Django использует upload_to из модели
+            )
+            message = 'Изделие добавлено'
+            product_data = {
+                'id': product.product_id,
+                'model': product.model,
+                'color': product.color,
+                'size': product.size,
+                'quantity': product.quantity,
+                'image': product.image_filename.url if product.image_filename else None
+            }
+
+        return JsonResponse({
+            'success': True,
+            'message': message,
+            'product': product_data
+        })
+
+    except Exception as e:
+        print(f"ERROR добавления товара: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return JsonResponse({'success': False, 'error': str(e)}, status=500)

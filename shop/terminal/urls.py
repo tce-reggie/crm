@@ -77,6 +77,7 @@ urlpatterns = [
     path('api/admin/print-areas/add/', views.api_admin_add_print_area, name='api_admin_add_print_area'),
     path('api/admin/print-areas/<int:area_id>/update/', views.api_admin_update_print_area, name='api_admin_update_print_area'),
     path('api/admin/print-areas/<int:area_id>/delete/', views.api_admin_delete_print_area, name='api_admin_delete_print_area'),
+    path('api/admin/products/add-with-image/', views.api_admin_add_product_with_image, name='api_admin_add_product_with_image'),
 
     # Принты
     path('api/admin/prints/', views.api_admin_prints, name='api_admin_prints'),
