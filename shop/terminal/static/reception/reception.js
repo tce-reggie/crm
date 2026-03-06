@@ -381,302 +381,357 @@ function closePrintModal() {
 // ПЕЧАТЬ НАКЛЕЙКИ
 // ========================
 
-// Печать наклейки заказа
 async function printOrderSticker(orderId) {
-    console.log('Печать наклейки для заказа:', orderId);
+    console.log('=== НАЧАЛО ПЕЧАТИ ===');
+
+    // 1. БЛОКИРОВКА ОТКРЫТИЯ ВКЛАДОК
+    const originalWindowOpen = window.open;
+    window.open = function() {
+        console.warn('⛔ БЛОКИРОВКА: Попытка открытия вкладки перехвачена!');
+        return null;
+    };
+
+    // 2. БЛОКИРОВКА ПЕРЕХОДОВ ПО ССЫЛКАМ
+    const handleClick = (e) => {
+        if (e.target.tagName === 'A' && e.target.target === '_blank') {
+            e.preventDefault();
+            console.warn('⛔ БЛОКИРОВКА: Переход по ссылке заблокирован');
+        }
+    };
+    document.addEventListener('click', handleClick, true);
 
     try {
-        // Загружаем детали заказа с принтами
+        // 3. Загрузка данных
         const response = await fetch(`${API_URLS.orderDetail}${orderId}/`);
-        if (!response.ok) throw new Error('Ошибка загрузки деталей заказа');
+        if (!response.ok) throw new Error('Ошибка загрузки');
 
         const result = await response.json();
         if (!result.success) throw new Error(result.error);
 
         const order = result.order;
+        console.log('Данные загружены:', order.order_number);
 
-        // Создаем новое окно для печати
+        // 4. Сохраняем состояние страницы
+        const originalContent = document.body.innerHTML;
+        const originalTitle = document.title;
+        const scrollPos = window.scrollY;
+
+        // 5. Генерируем контент наклейки
+        const stickerHTML = generateStickerContentOnly(order);
+        const styles = getStickerPrintStyles();
+
+        // 6. СОЗДАЕМ НОВОЕ ОКНО, НО СРАЗУ ЕГО СКРЫВАЕМ!
         const printWindow = window.open('', '_blank');
+
+        // Если не удалось открыть окно (попап-блокировщик)
         if (!printWindow) {
-            alert('Разрешите всплывающие окна для печати');
+            console.warn('Не удалось открыть окно печати, используем альтернативный метод');
+
+            // Альтернатива: печатаем на текущей странице с медиа-запросами
+            const printContainer = document.createElement('div');
+            printContainer.id = 'print-container';
+            printContainer.style.position = 'absolute';
+            printContainer.style.left = '-9999px';
+            printContainer.style.top = '0';
+            printContainer.innerHTML = `
+                <style>${styles}</style>
+                ${stickerHTML}
+            `;
+            document.body.appendChild(printContainer);
+
+            // Добавляем стили для печати
+            const style = document.createElement('style');
+            style.textContent = `
+                @media print {
+                    body > *:not(#print-container) { display: none !important; }
+                    #print-container {
+                        display: block !important;
+                        position: static !important;
+                        left: auto !important;
+                    }
+                }
+            `;
+            document.head.appendChild(style);
+
+            document.title = `Заказ ${order.order_number}`;
+
+            // ПЕЧАТАЕМ
+            setTimeout(() => {
+                window.print();
+            }, 100);
+
+            // Восстанавливаем
+            setTimeout(() => {
+                document.body.innerHTML = originalContent;
+                document.title = originalTitle;
+                window.scrollTo(0, scrollPos);
+                style.remove();
+
+                // Снимаем блокировки
+                window.open = originalWindowOpen;
+                document.removeEventListener('click', handleClick, true);
+            }, 1000);
+
             return;
         }
 
-        // Генерируем HTML для наклейки с данными о принтах
-        const html = generateStickerHTML(order);
+        // 7. ОСНОВНОЙ МЕТОД - пишем контент в новое окно
+        printWindow.document.write(`
+            <!DOCTYPE html>
+            <html>
+                <head>
+                    <title>Печать заказа ${order.order_number}</title>
+                    <style>${styles}</style>
+                    <style>
+                        @page { size: 75mm 120mm; margin: 2mm; }
+                        body {
+                            margin: 0;
+                            padding: 0;
+                            background: white;
+                            display: flex;
+                            justify-content: center;
+                            align-items: center;
+                            min-height: 100vh;
+                        }
+                        .sticker-wrapper {
+                            width: 75mm;
+                            margin: 0 auto;
+                        }
+                    </style>
+                </head>
+                <body>
+                    ${stickerHTML}
+                    <script>
+                        // Сразу после загрузки вызываем печать
+                        window.onload = function() {
+                            // Фокусируемся на окне
+                            window.focus();
 
-        printWindow.document.write(html);
+                            // Даем время на отрисовку
+                            setTimeout(function() {
+                                // Вызываем печать
+                                window.print();
+
+                                // После печати закрываем окно
+                                setTimeout(function() {
+                                    window.close();
+                                }, 500);
+                            }, 200);
+                        };
+                    <\/script>
+                </body>
+            </html>
+        `);
+
         printWindow.document.close();
 
-        // Даем время на загрузку и печатаем
+        console.log('=== ОТПРАВЛЕНО В ОЧЕРЕДЬ ПЕЧАТИ ===');
+
+        // 8. Снимаем блокировки (окно само закроется)
         setTimeout(() => {
-            printWindow.print();
-            // Можно закрыть окно после печати
-            // setTimeout(() => printWindow.close(), 500);
-        }, 500);
+            window.open = originalWindowOpen;
+            document.removeEventListener('click', handleClick, true);
+        }, 5000);
 
     } catch (error) {
-        console.error('Ошибка печати наклейки:', error);
-        alert('Ошибка загрузки данных для печати: ' + error.message);
+        console.error('=== ОШИБКА ПЕЧАТИ ===', error);
+        alert('Ошибка: ' + error.message);
+
+        // Снимаем блокировки при ошибке
+        window.open = originalWindowOpen;
+        document.removeEventListener('click', handleClick, true);
     }
 }
 
-// Генерация HTML для наклейки
-function generateStickerHTML(order) {
-    console.log('Генерация наклейки для заказа:', order);
-    console.log('Принты заказа:', order.prints);
-
-    // Определяем размеры в зависимости от количества принтов
+function generateStickerContentOnly(order) {
     const prints = order.prints || [];
     const printsCount = prints.length;
+    const isCompact = printsCount > 4;
 
-    let pageHeight = '100mm'; // базовая высота
-
-    if (printsCount === 0) pageHeight = '80mm';
-    else if (printsCount <= 2) pageHeight = '90mm';
-    else if (printsCount <= 4) pageHeight = '100mm';
-    else if (printsCount <= 6) pageHeight = '120mm';
-    else pageHeight = '140mm';
-
-    // Создаем HTML для принтов (как в showOrderModal)
-    let printsHTML = '';
-    if (printsCount > 0) {
-        // Создаем заголовки таблицы
-        printsHTML += `
-                <div class="prints-grid">
-                    <div class="print-header">Зона</div>
-                    <div class="print-header">Содержимое</div>
-                    <div class="print-header">Позиция</div>
-        `;
-
-        // Добавляем каждый принт через forEach (как в showOrderModal)
-        prints.forEach(print => {
-            printsHTML += `
-                    <div class="print-area">${print.area_name || 'Неизвестно'}</div>
-                    <div class="print-content">${print.content || 'Нет содержимого'}</div>
-                    <div class="print-position">${Math.round(print.position_x || 0)}:${Math.round(print.position_y || 0)}</div>
-            `;
-        });
-
-        printsHTML += `
+    let printsHTML = printsCount > 0
+        ? `<div class="prints-list ${isCompact ? 'compact' : ''}">
+            ${prints.map(p => `
+                <div class="print-row">
+                    <div class="print-zone">${p.area_name || '—'}</div>
+                    <div class="print-content">${p.content || '—'}</div>
+                    <div class="print-position">${Math.round(p.position_x||0)}:${Math.round(p.position_y||0)}</div>
                 </div>
-        `;
-    } else {
-        printsHTML = '<div class="info-row">Принты не добавлены</div>';
-    }
+            `).join('')}
+          </div>`
+        : '<div class="info-row no-prints">Принты не добавлены</div>';
 
     return `
-    <!DOCTYPE html>
-    <html>
-    <head>
-        <title>Заказ ${order.order_number}</title>
-        <meta charset="UTF-8">
-        <style>
-            @media print {
-                @page {
-                    size: 80mm ${pageHeight};
-                    margin: 2mm;
-                    padding: 0;
-                }
-                body {
-                    font-family: 'Courier New', monospace;
-                    font-size: 9pt;
-                    margin: 0;
-                    padding: 0;
-                    line-height: 1.1;
-                    -webkit-print-color-adjust: exact;
-                    print-color-adjust: exact;
-                }
-                * {
-                    box-sizing: border-box;
-                }
-            }
-
-            .sticker {
-                width: 76mm;
-                min-height: calc(${pageHeight} - 4mm);
-                border: 1px solid #000;
-                padding: 3mm;
-            }
-
-            .header {
-                text-align: center;
-                border-bottom: 2px solid #000;
-                padding-bottom: 2mm;
-                margin-bottom: 3mm;
-            }
-
-            .order-number {
-                font-size: 12pt;
-                font-weight: bold;
-                margin: 0 0 1mm 0;
-                letter-spacing: 1px;
-            }
-
-            .status {
-                font-size: 9pt;
-                margin: 0;
-                font-weight: bold;
-            }
-
-            .section {
-                margin-bottom: 3mm;
-            }
-
-            .section-title {
-                font-weight: bold;
-                border-bottom: 1px solid #000;
-                padding-bottom: 1mm;
-                margin-bottom: 1mm;
-                text-transform: uppercase;
-                font-size: 8pt;
-                letter-spacing: 0.5px;
-            }
-
-            .info-row {
-                display: flex;
-                margin-bottom: 1mm;
-            }
-
-            .info-label {
-                font-weight: bold;
-                width: 20mm;
-                min-width: 20mm;
-            }
-
-            .info-value {
-                flex: 1;
-                word-break: break-word;
-            }
-
-            .prints-grid {
-                display: grid;
-                grid-template-columns: 15mm auto 15mm;
-                gap: 1mm;
-                font-size: 8pt;
-                margin-top: 1mm;
-            }
-
-            .print-header {
-                font-weight: bold;
-                border-bottom: 1px solid #ccc;
-                padding-bottom: 0.5mm;
-                margin-bottom: 0.5mm;
-            }
-
-            .print-area {
-                font-weight: bold;
-            }
-
-            .print-content {
-                word-break: break-word;
-                max-height: 15mm;
-                overflow: hidden;
-            }
-
-            .print-position {
-                text-align: right;
-                font-size: 7pt;
-                color: #666;
-            }
-
-            .footer {
-                border-top: 1px solid #000;
-                padding-top: 1mm;
-                margin-top: 3mm;
-                font-size: 7pt;
-                text-align: center;
-                color: #666;
-            }
-
-            .timestamp {
-                margin-bottom: 0.5mm;
-            }
-
-            /* Для большого количества принтов - более компактный вид */
-            .compact-prints .prints-grid {
-                grid-template-columns: 12mm auto 12mm;
-                font-size: 7pt;
-                gap: 0.5mm;
-            }
-
-            /* Вертикальная черта для разделения принтов */
-            .print-separator {
-                border-top: 1px dashed #ccc;
-                margin: 0.5mm 0;
-            }
-
-            @media print {
-                .print-separator {
-                    border-top: 1px dashed #000;
-                }
-            }
-        </style>
-    </head>
-    <body>
-        <div class="sticker ${printsCount > 4 ? 'compact-prints' : ''}">
+    <div class="sticker-wrapper">
+        <div class="sticker">
             <div class="header">
                 <div class="order-number">${order.order_number}</div>
                 <div class="status">${order.status === 'confirmed' ? 'ПОДТВЕРЖДЕН' : order.status.toUpperCase()}</div>
             </div>
-
             <div class="section">
                 <div class="section-title">Товар</div>
-                <div class="info-row">
-                    <div class="info-label">Модель:</div>
-                    <div class="info-value">${order.product.model}</div>
-                </div>
-                <div class="info-row">
-                    <div class="info-label">Цвет:</div>
-                    <div class="info-value">${order.product.color}</div>
-                </div>
-                <div class="info-row">
-                    <div class="info-label">Размер:</div>
-                    <div class="info-value">${order.product.size}</div>
-                </div>
+                <div class="info-row"><div class="info-label">Модель:</div><div class="info-value">${order.product.model}</div></div>
+                <div class="info-row"><div class="info-label">Цвет:</div><div class="info-value">${order.product.color}</div></div>
+                <div class="info-row"><div class="info-label">Размер:</div><div class="info-value">${order.product.size}</div></div>
             </div>
-
             <div class="section">
                 <div class="section-title">Принты (${printsCount})</div>
                 ${printsHTML}
             </div>
-
             <div class="section">
                 <div class="section-title">Клиент</div>
-                <div class="info-row">
-                    <div class="info-label">Имя:</div>
-                    <div class="info-value">${order.customer_name}</div>
-                </div>
-                <div class="info-row">
-                    <div class="info-label">Телефон:</div>
-                    <div class="info-value">${order.phone_number}</div>
-                </div>
-                <div class="info-row">
-                    <div class="info-label">Дата заказа:</div>
-                    <div class="info-value">${order.created_date}</div>
-                </div>
+                <div class="info-row"><div class="info-label">Имя:</div><div class="info-value">${order.customer_name}</div></div>
+                <div class="info-row"><div class="info-label">Телефон:</div><div class="info-value">${order.phone_number}</div></div>
+                <div class="info-row"><div class="info-label">Дата:</div><div class="info-value">${order.created_date}</div></div>
             </div>
-
             <div class="footer">
-                <div class="timestamp">Распечатано: ${new Date().toLocaleString('ru-RU')}</div>
+                <div class="timestamp">${new Date().toLocaleString('ru-RU')}</div>
                 <div>ID: ${order.id}</div>
             </div>
         </div>
+    </div>`;
+}
 
-        <script>
-            window.onload = function() {
-                // Небольшая задержка для полной загрузки шрифтов
-                setTimeout(() => {
-                    window.print();
-                    // Закрыть окно через 1 секунду
-                    setTimeout(() => {
-                        window.close();
-                    }, 1000);
-                }, 50);
-            };
-        </script>
-    </body>
-    </html>
+function getStickerPrintStyles() {
+    return `
+        @media print {
+            @page { size: 75mm 120mm; margin: 2mm; }
+            body {
+                font-family: 'Courier New', monospace;
+                font-size: 8.5pt;
+                margin: 0;
+                padding: 0;
+                line-height: 0.95;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+                background: #fff;
+            }
+            * { box-sizing: border-box; }
+            .sticker-wrapper {
+                width: 75mm;
+                height: 120mm;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            }
+            /* Скрываем всё лишнее при печати */
+            .sticker-wrapper > * { width: 100%; }
+        }
+
+        .sticker-wrapper {
+            display: flex;
+            justify-content: center;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .sticker {
+            width: 71mm;
+            min-height: 116mm;
+            border: 1px solid #000;
+            padding: 2mm;
+            background: #fff;
+            font-family: 'Courier New', monospace;
+            font-size: 8.5pt;
+            line-height: 0.95;
+        }
+        .header {
+            text-align: center;
+            border-bottom: 1px solid #000;
+            padding-bottom: 1.5mm;
+            margin-bottom: 2mm;
+        }
+        .order-number {
+            font-size: 13pt;
+            font-weight: bold;
+            margin: 0 0 0.5mm 0;
+            letter-spacing: 1px;
+            line-height: 1;
+            color: #000;
+            /* НЕТ обводок, фонов, овалов */
+        }
+        .status {
+            font-size: 8pt;
+            margin: 0;
+            font-weight: bold;
+            line-height: 1;
+        }
+        .section { margin-bottom: 2mm; }
+        .section-title {
+            font-weight: bold;
+            border-bottom: 1px solid #000;
+            padding-bottom: 0.5mm;
+            margin-bottom: 1mm;
+            text-transform: uppercase;
+            font-size: 7.5pt;
+            letter-spacing: 0.3px;
+            line-height: 1;
+        }
+        .info-row {
+            display: flex;
+            margin-bottom: 0.5mm;
+            line-height: 1;
+        }
+        .info-row.no-prints {
+            font-style: italic;
+            color: #666;
+            margin: 1mm 0;
+        }
+        .info-label {
+            font-weight: bold;
+            width: 18mm;
+            min-width: 18mm;
+            flex-shrink: 0;
+        }
+        .info-value {
+            flex: 1;
+            word-break: break-word;
+            line-height: 1;
+        }
+
+        /* Список принтов */
+        .prints-list {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5mm;
+            font-size: 7.5pt;
+            margin-top: 0.5mm;
+            line-height: 1;
+        }
+        .prints-list.compact {
+            font-size: 7pt;
+            gap: 0.3mm;
+        }
+        .print-row {
+            display: grid;
+            grid-template-columns: 15mm auto 13mm;
+            gap: 0.5mm;
+            align-items: start;
+        }
+        .prints-list.compact .print-row {
+            grid-template-columns: 13mm auto 11mm;
+        }
+        .print-zone {
+            font-weight: bold;
+            color: #000;
+            /* НЕТ рамок, фонов, обводок */
+        }
+        .print-content {
+            word-break: break-word;
+            line-height: 1;
+        }
+        .print-position {
+            text-align: right;
+            font-size: 7pt;
+            color: #666;
+        }
+        .footer {
+            border-top: 1px solid #000;
+            padding-top: 1mm;
+            margin-top: 2mm;
+            font-size: 6.5pt;
+            text-align: center;
+            color: #666;
+            line-height: 1.1;
+        }
     `;
 }
 

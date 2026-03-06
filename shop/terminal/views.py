@@ -468,12 +468,12 @@ def api_create_order(request):
                     print(f"Ошибка при создании OrderPrint: {str(e)}")
                     continue
 
-            order_number = f"ORD{order.order_id:06d}"
-            print(f"Заказ успешно создан. Номер: {order_number}")
+
+            print(f"Заказ успешно создан. Номер: {order.order_id}")
 
         return JsonResponse({
             'success': True,
-            'order_number': order_number,
+            'order_number': order.order_id,
             'order_id': order.order_id
         })
 
