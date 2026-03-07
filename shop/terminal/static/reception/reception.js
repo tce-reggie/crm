@@ -546,47 +546,55 @@ async function printOrderSticker(orderId) {
 function generateStickerContentOnly(order) {
     const prints = order.prints || [];
     const printsCount = prints.length;
-    const isCompact = printsCount > 4;
 
-    let printsHTML = printsCount > 0
-        ? `<div class="prints-list ${isCompact ? 'compact' : ''}">
-            ${prints.map(p => `
-                <div class="print-row">
-                    <div class="print-zone">${p.area_name || '—'}</div>
-                    <div class="print-content">${p.content || '—'}</div>
-                    <div class="print-position">${Math.round(p.position_x||0)}:${Math.round(p.position_y||0)}</div>
+    let printsHTML = '';
+    if (printsCount > 0) {
+        printsHTML = '<div style="margin: 1.5mm 0;">';
+        prints.forEach(p => {
+            printsHTML += `
+                <div style="margin-bottom: 0.5mm;">
+                    <span style="font-weight: bold;">${p.area_name || '—'}:</span>
+                    <span> ${p.content || '—'} (${Math.round(p.position_x||0)}:${Math.round(p.position_y||0)})</span>
                 </div>
-            `).join('')}
-          </div>`
-        : '<div class="info-row no-prints">Принты не добавлены</div>';
+            `;
+        });
+        printsHTML += '</div>';
+    } else {
+        printsHTML = '<div style="margin: 1.5mm 0; font-style: italic;">Принты не добавлены</div>';
+    }
 
     return `
-    <div class="sticker-wrapper">
-        <div class="sticker">
-            <div class="header">
-                <div class="order-number">${order.order_number}</div>
-                <div class="status">${order.status === 'confirmed' ? 'ПОДТВЕРЖДЕН' : order.status.toUpperCase()}</div>
-            </div>
-            <div class="section">
-                <div class="section-title">Товар</div>
-                <div class="info-row"><div class="info-label">Модель:</div><div class="info-value">${order.product.model}</div></div>
-                <div class="info-row"><div class="info-label">Цвет:</div><div class="info-value">${order.product.color}</div></div>
-                <div class="info-row"><div class="info-label">Размер:</div><div class="info-value">${order.product.size}</div></div>
-            </div>
-            <div class="section">
-                <div class="section-title">Принты (${printsCount})</div>
-                ${printsHTML}
-            </div>
-            <div class="section">
-                <div class="section-title">Клиент</div>
-                <div class="info-row"><div class="info-label">Имя:</div><div class="info-value">${order.customer_name}</div></div>
-                <div class="info-row"><div class="info-label">Телефон:</div><div class="info-value">${order.phone_number}</div></div>
-                <div class="info-row"><div class="info-label">Дата:</div><div class="info-value">${order.created_date}</div></div>
-            </div>
-            <div class="footer">
-                <div class="timestamp">${new Date().toLocaleString('ru-RU')}</div>
-                <div>ID: ${order.id}</div>
-            </div>
+    <div style="width: 71mm; min-height: 116mm; margin: 0 auto; background: white; color: black; font-family: 'Courier New', monospace; font-size: 9pt; line-height: 1.1; padding: 1.5mm;">
+        <div style="text-align: center; margin-bottom: 2mm;">
+            <div style="font-size: 14pt; font-weight: bold;">${order.order_number}</div>
+        </div>
+
+        <hr style="border: none; border-top: 1px solid black; margin: 1.5mm 0;">
+
+        <div style="margin-bottom: 2mm;">
+            <div style="font-weight: bold; margin-bottom: 0.5mm;">ТОВАР</div>
+            <div>${order.product.model} / ${order.product.color} / ${order.product.size}</div>
+        </div>
+
+        <hr style="border: none; border-top: 1px solid black; margin: 1.5mm 0;">
+
+        <div style="margin-bottom: 2mm;">
+            <div style="font-weight: bold; margin-bottom: 0.5mm;">ПРИНТЫ (${printsCount})</div>
+            ${printsHTML}
+        </div>
+
+        <hr style="border: none; border-top: 1px solid black; margin: 1.5mm 0;">
+
+        <div style="margin-bottom: 2mm;">
+            <div style="font-weight: bold; margin-bottom: 0.5mm;">КЛИЕНТ</div>
+            <div>${order.customer_name}</div>
+            <div>${order.phone_number}</div>
+        </div>
+
+        <hr style="border: none; border-top: 1px solid black; margin: 1.5mm 0;">
+
+        <div style="font-size: 7pt; text-align: center;">
+            ${order.created_date} | ID: ${order.id}
         </div>
     </div>`;
 }
@@ -596,141 +604,21 @@ function getStickerPrintStyles() {
         @media print {
             @page { size: 75mm 120mm; margin: 2mm; }
             body {
-                font-family: 'Courier New', monospace;
-                font-size: 8.5pt;
                 margin: 0;
                 padding: 0;
-                line-height: 0.95;
+                background: white;
+                color: black;
+                font-family: 'Courier New', monospace;
                 -webkit-print-color-adjust: exact;
                 print-color-adjust: exact;
-                background: #fff;
             }
-            * { box-sizing: border-box; }
-            .sticker-wrapper {
-                width: 75mm;
-                height: 120mm;
-                display: flex;
-                align-items: center;
-                justify-content: center;
+            * {
+                background: white !important;
+                color: black !important;
+                border-color: black !important;
+                box-shadow: none !important;
+                text-shadow: none !important;
             }
-            /* Скрываем всё лишнее при печати */
-            .sticker-wrapper > * { width: 100%; }
-        }
-
-        .sticker-wrapper {
-            display: flex;
-            justify-content: center;
-            padding: 20px;
-            background: #f5f5f5;
-        }
-        .sticker {
-            width: 71mm;
-            min-height: 116mm;
-            border: 1px solid #000;
-            padding: 2mm;
-            background: #fff;
-            font-family: 'Courier New', monospace;
-            font-size: 8.5pt;
-            line-height: 0.95;
-        }
-        .header {
-            text-align: center;
-            border-bottom: 1px solid #000;
-            padding-bottom: 1.5mm;
-            margin-bottom: 2mm;
-        }
-        .order-number {
-            font-size: 13pt;
-            font-weight: bold;
-            margin: 0 0 0.5mm 0;
-            letter-spacing: 1px;
-            line-height: 1;
-            color: #000;
-            /* НЕТ обводок, фонов, овалов */
-        }
-        .status {
-            font-size: 8pt;
-            margin: 0;
-            font-weight: bold;
-            line-height: 1;
-        }
-        .section { margin-bottom: 2mm; }
-        .section-title {
-            font-weight: bold;
-            border-bottom: 1px solid #000;
-            padding-bottom: 0.5mm;
-            margin-bottom: 1mm;
-            text-transform: uppercase;
-            font-size: 7.5pt;
-            letter-spacing: 0.3px;
-            line-height: 1;
-        }
-        .info-row {
-            display: flex;
-            margin-bottom: 0.5mm;
-            line-height: 1;
-        }
-        .info-row.no-prints {
-            font-style: italic;
-            color: #666;
-            margin: 1mm 0;
-        }
-        .info-label {
-            font-weight: bold;
-            width: 18mm;
-            min-width: 18mm;
-            flex-shrink: 0;
-        }
-        .info-value {
-            flex: 1;
-            word-break: break-word;
-            line-height: 1;
-        }
-
-        /* Список принтов */
-        .prints-list {
-            display: flex;
-            flex-direction: column;
-            gap: 0.5mm;
-            font-size: 7.5pt;
-            margin-top: 0.5mm;
-            line-height: 1;
-        }
-        .prints-list.compact {
-            font-size: 7pt;
-            gap: 0.3mm;
-        }
-        .print-row {
-            display: grid;
-            grid-template-columns: 15mm auto 13mm;
-            gap: 0.5mm;
-            align-items: start;
-        }
-        .prints-list.compact .print-row {
-            grid-template-columns: 13mm auto 11mm;
-        }
-        .print-zone {
-            font-weight: bold;
-            color: #000;
-            /* НЕТ рамок, фонов, обводок */
-        }
-        .print-content {
-            word-break: break-word;
-            line-height: 1;
-        }
-        .print-position {
-            text-align: right;
-            font-size: 7pt;
-            color: #666;
-        }
-        .footer {
-            border-top: 1px solid #000;
-            padding-top: 1mm;
-            margin-top: 2mm;
-            font-size: 6.5pt;
-            text-align: center;
-            color: #666;
-            line-height: 1.1;
         }
     `;
 }
