@@ -1172,38 +1172,37 @@ def api_printing_get_zone_image(request):
 # =========================
 # ТАБЛО API ENDPOINTS
 # =========================
-
 @csrf_exempt
 def api_scoreboard_data(request):
     """Возвращает данные для табло: заказы в работе и готовые к выдаче"""
     try:
-        # ЗАКАЗЫ В РАБОТЕ - через OrderAssignment
-        in_progress_assignments = OrderAssignment.objects.filter(
-            Q(status='in_progress', interface='print') |
-            Q(status='completed', interface='reception')
-        ).select_related('order', 'order__product', 'worker').order_by('started_at')[:10]
+        # ЗАКАЗЫ В РАБОТЕ - заказы со статусами new, confirmed, printing, printed
+        in_progress_orders = Order.objects.filter(
+            Q(status='new') |
+            Q(status='confirmed') |
+            Q(status='printing')
+        ).select_related('product').order_by('created_date')[:10]
 
         in_progress_data = []
-        for assignment in in_progress_assignments:
-            order = assignment.order
+        for order in in_progress_orders:
             in_progress_data.append({
-                'number': f"ORD{order.order_id:06d}",
+                'number': f"{order.order_id:}",
                 'id': order.order_id,
                 'product': f"{order.product.model} {order.product.color} {order.product.size}",
-                'customer': order.customer_name,  # Добавляем имя клиента
-                'worker': assignment.worker.employee_name if assignment.worker else 'Неизвестно',
-                'started': assignment.started_at.strftime('%H:%M') if assignment.started_at else '',
+                'customer': order.customer_name,
+                'status': order.get_status_display(),
+                'created': order.created_date.strftime('%H:%M') if order.created_date else '',
             })
 
         # ГОТОВЫЕ ЗАКАЗЫ (printed) - напрямую из Order
         ready_orders = Order.objects.filter(
-            status='printed'  # Статус "Напечатан"
+            status='printed'
         ).select_related('product').order_by('-created_date')[:10]
 
         ready_data = []
         for order in ready_orders:
             ready_data.append({
-                'number': f"ORD{order.order_id:06d}",
+                'number': f"{order.order_id:}",
                 'id': order.order_id,
                 'product': f"{order.product.model} {order.product.color} {order.product.size}",
                 'customer': order.customer_name,
@@ -2395,7 +2394,6 @@ def api_admin_add_event(request):
     except Exception as e:
         return JsonResponse({'success': False, 'error': str(e)}, status=500)
 
-
 @csrf_exempt
 @require_POST
 def api_admin_update_event(request, event_id):
@@ -2428,7 +2426,6 @@ def api_admin_update_event(request, event_id):
     except Exception as e:
         return JsonResponse({'success': False, 'error': str(e)}, status=500)
 
-
 @csrf_exempt
 @require_POST
 def api_admin_set_active_event(request, event_id):
@@ -2450,7 +2447,6 @@ def api_admin_set_active_event(request, event_id):
 
     except Exception as e:
         return JsonResponse({'success': False, 'error': str(e)}, status=500)
-
 
 @csrf_exempt
 @require_POST
@@ -2479,7 +2475,6 @@ def api_admin_delete_event(request, event_id):
 
     except Exception as e:
         return JsonResponse({'success': False, 'error': str(e)}, status=500)
-
 
 # ========== ТОВАРЫ МЕРОПРИЯТИЙ ==========
 
@@ -2527,7 +2522,6 @@ def api_admin_events_products(request):
     except Exception as e:
         return JsonResponse({'success': False, 'error': str(e)}, status=500)
 
-
 @csrf_exempt
 @require_POST
 def api_admin_add_event_product(request):
@@ -2563,7 +2557,6 @@ def api_admin_add_event_product(request):
 
     except Exception as e:
         return JsonResponse({'success': False, 'error': str(e)}, status=500)
-
 
 @csrf_exempt
 @require_POST
@@ -2732,7 +2725,6 @@ def api_admin_add_print_area(request):
         import traceback
         traceback.print_exc()
         return JsonResponse({'success': False, 'error': str(e)}, status=500)
-
 
 @csrf_exempt
 @require_POST
