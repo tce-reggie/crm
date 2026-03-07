@@ -242,6 +242,7 @@ async function loadAreaImages(product, areaNames) {
 }
 
 // Отображение конкретной зоны печати с принтами
+// Отображение конкретной зоны печати с принтами
 async function renderPrintArea(areaName, prints) {
     const previewContainer = document.getElementById('printAreaPreview');
     if (!previewContainer) return;
@@ -276,13 +277,13 @@ async function renderPrintArea(areaName, prints) {
 
     // Создаем контейнер для изображения и принтов
     previewContainer.innerHTML = `
-        <img src="${imageUrl}" class="print-zone-image" id="zoneImage"
-             onload="positionPrints('${areaName}')">
-        <div id="printsOverlay" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;"></div>
+        <div style="position: relative; display: inline-block;">
+            <img src="${imageUrl}" class="print-zone-image" id="zoneImage"
+                 style="width: auto; height: auto; display: block;"
+                 onload="positionPrints('${areaName}')">
+            <div id="printsOverlay" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none;"></div>
+        </div>
     `;
-
-    // После загрузки изображения позиционируем принты
-    setTimeout(() => positionPrints(areaName), 100);
 }
 
 // Позиционирование принтов на изображении зоны
@@ -296,16 +297,19 @@ function positionPrints(areaName) {
     // Очищаем предыдущие принты
     overlay.innerHTML = '';
 
-    // Добавляем каждый принт
+    // Получаем смещение области из данных заказа
+    const areaOffset = currentOrder.print_areas?.[areaName] || { offset_x: 0, offset_y: 0 };
+
+    // Добавляем каждый принт с учетом смещения области
     prints.forEach(print => {
         const isImage = print.content.includes('/');
 
         const printElement = document.createElement('div');
         printElement.className = 'print-content-overlay';
 
-        // Позиционируем относительно изображения
-        const x = parseFloat(print.position_x);
-        const y = parseFloat(print.position_y);
+        // Позиционируем относительно изображения с учетом смещения области
+        const x = parseFloat(print.position_x) + (areaOffset.offset_x || 0);
+        const y = parseFloat(print.position_y) + (areaOffset.offset_y || 0);
 
         printElement.style.left = `${x}px`;
         printElement.style.top = `${y}px`;
@@ -318,9 +322,24 @@ function positionPrints(areaName) {
             `;
         } else {
             // Для текста
-            printElement.innerHTML = `
-                <div class="print-content-text"
-                     style="font-size: 16px; color: black; background: rgba(255,255,255,0.7); padding: 2px 5px; border-radius: 3px;">
+             printElement.innerHTML = `
+                <div style="
+                    font-family: Arial, sans-serif;
+                    font-size: 16px;
+                    font-weight: normal;
+                    color: #FFFFFF;
+                    background: transparent;
+                    padding: 0;
+                    margin: 0;
+                    line-height: 1.2;
+                    text-align: center;
+                    white-space: normal;
+                    word-wrap: break-word;
+                    text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                ">
                     ${escapeHtml(print.content)}
                 </div>
             `;

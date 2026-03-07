@@ -760,7 +760,6 @@ def api_reception_confirm_order(request, order_id):
             'error': str(e)
         }, status=500)
 
-
 @csrf_exempt
 @require_POST
 def api_reception_cancel_order(request, order_id):
@@ -803,7 +802,6 @@ def api_reception_cancel_order(request, order_id):
 # =========================
 # PRINTING API ENDPOINTS
 # =========================
-
 @csrf_exempt
 def api_printing_get_new_order(request):
     """Получение нового заказа для печати"""
@@ -827,6 +825,17 @@ def api_printing_get_new_order(request):
             order = active_assignment.order
             prints = OrderPrint.objects.filter(order=order).select_related('area')
 
+            # Получаем все зоны печати для этого товара
+            print_areas = ProductPrintArea.objects.filter(product=order.product)
+            areas_info = {}
+            for area in print_areas:
+                areas_info[area.area_name] = {
+                    'offset_x': area.offset_x,
+                    'offset_y': area.offset_y,
+                    'width': float(area.width),
+                    'height': float(area.height)
+                }
+
             order_data = {
                 'id': order.order_id,
                 'order_number': f"ORD{order.order_id:06d}",
@@ -844,13 +853,14 @@ def api_printing_get_new_order(request):
                 'prints': [
                     {
                         'id': op.order_print_id,
-                        'content': op.get_print_display_url() if hasattr(op, 'get_print_display_url') else op.print_design,
+                        'content': op.print_design,
                         'area_name': op.area.area_name if op.area else 'Неизвестно',
                         'position_x': float(op.position_x),
                         'position_y': float(op.position_y),
                     }
                     for op in prints
                 ],
+                'print_areas': areas_info  # Добавляем информацию о зонах печати
             }
 
             return JsonResponse({
@@ -861,7 +871,7 @@ def api_printing_get_new_order(request):
                 'has_active_order': True
             })
 
-        # Ищем заказ со статусом 'composed' без активных назначений на печать
+        # Ищем заказ со статусом 'confirmed' без активных назначений на печать
         composed_orders = Order.objects.filter(
             status='confirmed'
         ).exclude(
@@ -892,6 +902,17 @@ def api_printing_get_new_order(request):
         # Получаем принты для этого заказа
         prints = OrderPrint.objects.filter(order=order).select_related('area')
 
+        # Получаем все зоны печати для этого товара
+        print_areas = ProductPrintArea.objects.filter(product=order.product)
+        areas_info = {}
+        for area in print_areas:
+            areas_info[area.area_name] = {
+                'offset_x': area.offset_x,
+                'offset_y': area.offset_y,
+                'width': float(area.width),
+                'height': float(area.height)
+            }
+
         order_data = {
             'id': order.order_id,
             'order_number': f"ORD{order.order_id:06d}",
@@ -909,13 +930,14 @@ def api_printing_get_new_order(request):
             'prints': [
                 {
                     'id': op.order_print_id,
-                    'content': op.get_print_display_url() if hasattr(op, 'get_print_display_url') else op.print_design,
+                    'content': op.print_design,
                     'area_name': op.area.area_name if op.area else 'Неизвестно',
                     'position_x': float(op.position_x),
                     'position_y': float(op.position_y),
                 }
                 for op in prints
             ],
+            'print_areas': areas_info  # Добавляем информацию о зонах печати
         }
 
         return JsonResponse({
@@ -932,6 +954,7 @@ def api_printing_get_new_order(request):
             'success': False,
             'error': str(e)
         }, status=500)
+
 
 @csrf_exempt
 def api_printing_get_current_order(request):
@@ -956,6 +979,17 @@ def api_printing_get_current_order(request):
         order = active_assignment.order
         prints = OrderPrint.objects.filter(order=order).select_related('area')
 
+        # Получаем все зоны печати для этого товара
+        print_areas = ProductPrintArea.objects.filter(product=order.product)
+        areas_info = {}
+        for area in print_areas:
+            areas_info[area.area_name] = {
+                'offset_x': area.offset_x,
+                'offset_y': area.offset_y,
+                'width': float(area.width),
+                'height': float(area.height)
+            }
+
         order_data = {
             'id': order.order_id,
             'order_number': f"ORD{order.order_id:06d}",
@@ -973,13 +1007,14 @@ def api_printing_get_current_order(request):
             'prints': [
                 {
                     'id': op.order_print_id,
-                    'content': op.get_print_display_url() if hasattr(op, 'get_print_display_url') else op.print_design,
+                    'content': op.print_design,
                     'area_name': op.area.area_name if op.area else 'Неизвестно',
                     'position_x': float(op.position_x),
                     'position_y': float(op.position_y),
                 }
                 for op in prints
             ],
+            'print_areas': areas_info  # Добавляем информацию о зонах печати
         }
 
         return JsonResponse({
@@ -1076,9 +1111,9 @@ def api_printing_cancel_order(request, order_id):
         # Отменяем работу
         assignment.cancel_work(notes=cancel_reason)
 
-        # Возвращаем статус заказа на 'composed' (можно было бы вернуть и на 'confirmed')
+        # Возвращаем статус заказа на 'confirmed'
         order = assignment.order
-        order.status = 'composed'
+        order.status = 'confirmed'
         order.save()
 
         print(f"Заказ #{order_id} возвращен из печати сотрудником {user.employee_name}. Причина: {cancel_reason}")
@@ -1115,8 +1150,10 @@ def api_printing_get_zone_image(request):
                 'success': True,
                 'image_url': area.area_image.url,
                 'area_name': area.area_name,
-                'width': area.width,
-                'height': area.height
+                'width': float(area.width),
+                'height': float(area.height),
+                'offset_x': area.offset_x,
+                'offset_y': area.offset_y
             })
         else:
             return JsonResponse({
